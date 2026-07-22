@@ -30,7 +30,7 @@ npm run test:integration --workspace=@reclaimai/pos-integration-service
 | Var | Purpose |
 |---|---|
 | `PORT` | Default `3002` |
-| `DATABASE_URL` | `postgresql://reclaimai:reclaimai_dev@localhost:5432/reclaimai` |
+| `DATABASE_URL` | `postgresql://reclaimai:reclaimai_dev@localhost:5433/reclaimai` |
 | `REDIS_URL` | `redis://localhost:6379/0` |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` |
 | `PETPOOJA_WEBHOOK_SECRET` | HMAC secret |

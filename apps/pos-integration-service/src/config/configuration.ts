@@ -13,7 +13,7 @@ export interface AppConfig {
 export function loadConfig(): AppConfig {
   const databaseUrl = (
     process.env.DATABASE_URL ??
-    'postgresql://reclaimai:reclaimai_dev@localhost:5432/reclaimai'
+    'postgresql://reclaimai:reclaimai_dev@localhost:5433/reclaimai'
   ).replace('postgresql+psycopg://', 'postgresql://');
 
   return {

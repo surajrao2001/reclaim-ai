@@ -12,6 +12,22 @@ class ApiErrorEnvelope(TypedDict):
     error: ApiError
 
 
+class ClaimContextResponse(TypedDict):
+    claim_token: str
+    tenant_name: str
+    order_id: str
+    petpooja_order_id: str
+    gross_amount: float
+    cashback_amount_inr: int
+    already_claimed: bool
+
+
+class ClaimOtpVerifyResponse(TypedDict):
+    claim_jwt: str
+    customer_id: str
+    message: str
+
+
 KAFKA_TOPICS = {
     "ORDER_CREATED": "reclaimai.order.created.v1",
     "IDENTITY_UNMASKED": "reclaimai.identity.unmasked.v1",

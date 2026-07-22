@@ -100,6 +100,38 @@ export interface ApiErrorBody {
   };
 }
 
+export interface ClaimContextResponse {
+  claim_token: string;
+  tenant_name: string;
+  order_id: string;
+  petpooja_order_id: string;
+  gross_amount: number;
+  cashback_amount_inr: number;
+  already_claimed: boolean;
+}
+
+export interface ClaimOtpRequest {
+  claim_token: string;
+  phone_e164: string;
+}
+
+export interface ClaimOtpRequestResponse {
+  expires_in_seconds: number;
+}
+
+export interface ClaimOtpVerifyRequest {
+  claim_token: string;
+  phone_e164: string;
+  otp: string;
+  consent_whatsapp: boolean;
+}
+
+export interface ClaimOtpVerifyResponse {
+  claim_jwt: string;
+  customer_id: string;
+  message: string;
+}
+
 export const KAFKA_TOPICS = {
   ORDER_CREATED: 'reclaimai.order.created.v1',
   IDENTITY_UNMASKED: 'reclaimai.identity.unmasked.v1',

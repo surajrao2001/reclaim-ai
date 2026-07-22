@@ -33,7 +33,7 @@ npm run build --workspace=@reclaimai/shared-auth
 | decay-prediction-service | 8003 |
 | copy-llm-orchestrator | 8004 |
 | analytics-service | 8005 |
-| Postgres | 5432 |
+| Postgres | 5433 (host) → 5432 (container) |
 | Redis | 6379 |
 | Redpanda Kafka | 19092 |
 
