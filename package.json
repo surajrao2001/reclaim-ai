@@ -1,0 +1,38 @@
+{
+  "name": "reclaimai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ReclaimAI — Zero-Touch Revenue & Retention Engine for Cloud Kitchens & Restaurants",
+  "packageManager": "npm@9.6.7",
+  "workspaces": [
+    "apps/dashboard-web",
+    "apps/claim-web",
+    "apps/tenant-auth-service",
+    "apps/pos-integration-service",
+    "apps/whatsapp-dispatch-service",
+    "apps/notification-audit-service",
+    "libs/shared-types",
+    "libs/shared-auth",
+    "libs/ui-components"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "docker:up": "docker compose -f docker-compose.dev.yml up -d",
+    "docker:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:logs": "docker compose -f docker-compose.dev.yml logs -f"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

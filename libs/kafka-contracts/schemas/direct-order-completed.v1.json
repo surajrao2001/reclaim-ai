@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DirectOrderCompletedPayload",
+  "type": "object",
+  "required": ["direct_order_id", "customer_id", "channel", "amount", "commission_saved"],
+  "additionalProperties": false,
+  "properties": {
+    "direct_order_id": { "type": "string", "format": "uuid" },
+    "customer_id": { "type": "string", "format": "uuid" },
+    "offer_id": { "type": ["string", "null"], "format": "uuid" },
+    "channel": {
+      "type": "string",
+      "enum": ["direct_link", "ondc"]
+    },
+    "amount": { "type": "number" },
+    "commission_saved": { "type": "number" },
+    "ordered_at": { "type": "string", "format": "date-time" }
+  }
+}

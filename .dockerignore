@@ -1,0 +1,10 @@
+node_modules/
+.next/
+dist/
+.turbo/
+.data/
+.venv/
+__pycache__/
+*.pyc
+.env
+coverage/

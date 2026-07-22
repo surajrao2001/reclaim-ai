@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OrderCreatedPayload",
+  "type": "object",
+  "required": [
+    "petpooja_order_id",
+    "aggregator",
+    "order_items",
+    "gross_amount",
+    "ordered_at",
+    "claim_qr_url"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "petpooja_order_id": { "type": "string" },
+    "aggregator": {
+      "type": "string",
+      "enum": ["zomato", "swiggy", "direct", "ondc"]
+    },
+    "masked_customer_ref": { "type": ["string", "null"] },
+    "order_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "quantity", "price"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "quantity": { "type": "number" },
+          "price": { "type": "number" }
+        }
+      }
+    },
+    "gross_amount": { "type": "number" },
+    "food_cost": { "type": ["number", "null"] },
+    "ordered_at": { "type": "string", "format": "date-time" },
+    "claim_qr_url": { "type": "string", "format": "uri" }
+  }
+}

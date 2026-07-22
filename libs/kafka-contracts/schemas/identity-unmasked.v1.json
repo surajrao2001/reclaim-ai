@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IdentityUnmaskedPayload",
+  "type": "object",
+  "required": ["customer_id", "aggregator_order_id", "consent_whatsapp"],
+  "additionalProperties": false,
+  "properties": {
+    "customer_id": { "type": "string", "format": "uuid" },
+    "aggregator_order_id": { "type": "string", "format": "uuid" },
+    "consent_whatsapp": { "type": "boolean" },
+    "phone_e164_hash": {
+      "type": "string",
+      "description": "HMAC hash of E.164 phone for cross-service correlation without raw PII"
+    }
+  }
+}

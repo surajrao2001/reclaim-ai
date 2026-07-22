@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ReclaimAIEventEnvelope",
+  "description": "Common envelope for all reclaimai.*.v1 Kafka topics",
+  "type": "object",
+  "required": ["event_id", "event_type", "tenant_id", "occurred_at", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "reclaimai.order.created.v1",
+        "reclaimai.identity.unmasked.v1",
+        "reclaimai.offer.ready.v1",
+        "reclaimai.message.generated.v1",
+        "reclaimai.whatsapp.delivered.v1",
+        "reclaimai.direct_order.completed.v1"
+      ]
+    },
+    "tenant_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "trace_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}

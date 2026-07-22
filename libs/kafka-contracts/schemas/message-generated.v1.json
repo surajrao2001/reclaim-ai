@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MessageGeneratedPayload",
+  "type": "object",
+  "required": ["offer_id", "message_body", "selected_discount_value", "llm_model_used", "prompt_version"],
+  "additionalProperties": false,
+  "properties": {
+    "offer_id": { "type": "string", "format": "uuid" },
+    "message_body": { "type": "string", "maxLength": 1024 },
+    "selected_discount_value": { "type": "number" },
+    "llm_model_used": { "type": "string" },
+    "prompt_version": { "type": "string" },
+    "cta_url": { "type": "string", "format": "uri" }
+  }
+}

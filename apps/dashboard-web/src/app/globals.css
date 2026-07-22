@@ -1,0 +1,49 @@
+:root {
+  --rai-bg: #0f1c17;
+  --rai-fg: #f2f7f4;
+  --rai-accent: #3ecf8e;
+  --rai-muted: #9bb3a8;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(62, 207, 142, 0.18), transparent 40%),
+    radial-gradient(circle at 85% 10%, rgba(255, 196, 86, 0.12), transparent 35%),
+    linear-gradient(160deg, #0b1511 0%, #12221b 55%, #0f1c17 100%);
+  color: var(--rai-fg);
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  letter-spacing: -0.03em;
+  margin: 0 0 0.75rem;
+}
+
+p {
+  color: var(--rai-muted);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 42rem;
+}
+
+.brand {
+  color: var(--rai-accent);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}

@@ -1,0 +1,37 @@
+# Kafka topic contracts (JSON Schema)
+#
+# Topic naming (immutable once published):
+#   reclaimai.order.created.v1
+#   reclaimai.identity.unmasked.v1
+#   reclaimai.offer.ready.v1
+#   reclaimai.message.generated.v1
+#   reclaimai.whatsapp.delivered.v1
+#   reclaimai.direct_order.completed.v1
+#
+# Every message uses event-envelope.v1.json; payload schemas are per-topic.
+
+topics:
+  reclaimai.order.created.v1:
+    envelope: event-envelope.v1.json
+    payload: order-created.v1.json
+    partition_key: tenant_id
+  reclaimai.identity.unmasked.v1:
+    envelope: event-envelope.v1.json
+    payload: identity-unmasked.v1.json
+    partition_key: tenant_id
+  reclaimai.offer.ready.v1:
+    envelope: event-envelope.v1.json
+    payload: offer-ready.v1.json
+    partition_key: tenant_id
+  reclaimai.message.generated.v1:
+    envelope: event-envelope.v1.json
+    payload: message-generated.v1.json
+    partition_key: tenant_id
+  reclaimai.whatsapp.delivered.v1:
+    envelope: event-envelope.v1.json
+    payload: whatsapp-delivered.v1.json
+    partition_key: tenant_id
+  reclaimai.direct_order.completed.v1:
+    envelope: event-envelope.v1.json
+    payload: direct-order-completed.v1.json
+    partition_key: tenant_id
