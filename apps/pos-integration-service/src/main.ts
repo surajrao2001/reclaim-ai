@@ -1,12 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { loadConfig } from './config/configuration';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  const port = Number(process.env.PORT ?? 3002);
-  await app.listen(port);
-  Logger.log(`pos-integration-service listening on :${port}`, 'Bootstrap');
+  const config = loadConfig();
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
+  await app.listen(config.port);
+  Logger.log(`pos-integration-service listening on :${config.port}`, 'Bootstrap');
 }
 
 void bootstrap();

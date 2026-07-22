@@ -3,7 +3,8 @@
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "timescaledb";
-CREATE EXTENSION IF NOT EXISTS "vector";
+-- pgvector is optional locally; enable when the image includes it
+-- CREATE EXTENSION IF NOT EXISTS "vector";
 
 CREATE SCHEMA IF NOT EXISTS tenancy;
 CREATE SCHEMA IF NOT EXISTS identity;
@@ -124,3 +125,13 @@ CREATE TABLE IF NOT EXISTS analytics.order_events (
 );
 
 SELECT create_hypertable('analytics.order_events', 'time', if_not_exists => TRUE);
+
+-- ===================== LOCAL SEED =====================
+INSERT INTO tenancy.tenants (id, name, petpooja_restaurant_id, plan)
+VALUES (
+    '11111111-1111-1111-1111-111111111111',
+    'Demo Kitchen',
+    'pp_out_88219',
+    'starter'
+)
+ON CONFLICT (petpooja_restaurant_id) DO NOTHING;
