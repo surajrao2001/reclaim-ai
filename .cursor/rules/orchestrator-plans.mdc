@@ -1,0 +1,12 @@
+---
+description: Orchestrator and plan file conventions
+globs: docs/plans/**/*.md
+alwaysApply: false
+---
+
+# Plans
+
+- One milestone per file under `docs/plans/`
+- Include: goal, ownership paths, worker steps, acceptance criteria, out of scope
+- Update `docs/plans/_tracker.md` when status changes
+- Workers follow the plan; they do not rewrite architecture mid-flight

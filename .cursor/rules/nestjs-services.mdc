@@ -1,0 +1,13 @@
+---
+description: NestJS service conventions for ReclaimAI
+globs: apps/**/*-service/**/*.ts
+alwaysApply: false
+---
+
+# NestJS services
+
+- Module layout: `src/modules/<domain>/{controller,service,module,dto}.ts`
+- Every external API error uses the standard `{ error: { code, message, trace_id, retryable } }` envelope
+- Multi-tenancy: never query without `tenant_id` scope once known
+- Webhooks: verify signatures on raw body; consumers must be idempotent
+- Prefer constructor injection; keep controllers thin
