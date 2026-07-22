@@ -4,21 +4,22 @@ Last updated: 2026-07-22
 
 ## Active
 
-| Milestone | Branch | Status | Notes |
-|---|---|---|---|
-| POS order ingest | `feature/pos-order-ingest` | implemented | Unit tests green; run integration after Docker Desktop is up |
+_None — identity claim ready for merge review._
 
-## Queue (do not start yet)
+## Queue
 
 | Milestone | Depends on | Notes |
 |---|---|---|
-| Identity claim + OTP | POS order ingest merged to `dev` | B2C claim flow |
-| Margin offer engine | Identity unmasked events | Deterministic margin ceiling |
-| Copy/LLM orchestrator | Offer ready events | Claude API only (Phase 0) |
-| WhatsApp dispatch | Message generated events | Meta Cloud API + Gupshup failover |
+| Cashback payout (RazorpayX) | Identity claim merged to `dev` | UPI payout + webhook reconcile |
+| Margin offer engine | `identity.unmasked` | Deterministic margin ceiling |
+| Decay prediction service | `identity.unmasked` | Habit profile bootstrap |
+| Copy/LLM orchestrator | `offer.ready` | Claude API |
+| WhatsApp dispatch | `message.generated` | Meta + Gupshup failover |
 
 ## Completed
 
 | Milestone | Branch | Notes |
 |---|---|---|
-| Orchestrator scaffolding | `feature/pos-order-ingest` | `docs/plans`, `AGENTS.md`, `.cursor/rules` |
+| Orchestrator scaffolding | `feature/pos-order-ingest` | plans, AGENTS, cursor rules |
+| POS order ingest | `feature/pos-order-ingest` | webhook → Postgres → Kafka |
+| Identity claim + OTP | `feature/identity-claim-otp` | claim-web + identity service + Kafka unmasked |

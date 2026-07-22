@@ -1,15 +1,54 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+_SERVICE_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _discover_env_files() -> tuple[str, ...]:
+    candidates = (Path(".env"), _SERVICE_ROOT / ".env", _REPO_ROOT / ".env")
+    found = tuple(str(path) for path in candidates if path.is_file())
+    return found or (str(_REPO_ROOT / ".env.example"),)
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=_discover_env_files(),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     service_name: str = "identity-resolution-service"
     environment: str = "development"
     port: int = 8001
-    database_url: str = "postgresql+psycopg://reclaimai:reclaimai_dev@localhost:5432/reclaimai"
+    database_url: str = "postgresql://reclaimai:reclaimai_dev@localhost:5433/reclaimai"
     redis_url: str = "redis://localhost:6379/0"
     kafka_bootstrap_servers: str = "localhost:19092"
+    kafka_client_id: str = "identity-resolution-service"
+
+    claim_jwt_secret: str = "dev_claim_jwt_secret_change_me"
+    claim_jwt_ttl_seconds: int = 300
+    phone_hash_secret: str = "dev_phone_hash_secret_change_me"
+
+    otp_ttl_seconds: int = 300
+    otp_rate_limit_max: int = 3
+    otp_rate_limit_window_seconds: int = 600
+
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    smtp_from: str = "otp@reclaimai.local"
+
+    default_cashback_amount_inr: int = 100
+    cors_origins: str = "http://localhost:3101"
+
+    @property
+    def asyncpg_dsn(self) -> str:
+        return self.database_url.replace("postgresql+psycopg://", "postgresql://")
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
 
 settings = Settings()
