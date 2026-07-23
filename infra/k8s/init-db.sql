@@ -119,6 +119,9 @@ CREATE TABLE IF NOT EXISTS offers.whatsapp_messages (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_whatsapp_messages_offer_id
+    ON offers.whatsapp_messages (offer_id);
+
 CREATE TABLE IF NOT EXISTS commerce.direct_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID REFERENCES tenancy.tenants(id),
