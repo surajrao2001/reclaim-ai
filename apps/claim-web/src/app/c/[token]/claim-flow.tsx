@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { Button } from '@reclaimai/ui-components';
 import type { ClaimContextResponse } from '@reclaimai/shared-types';
 import {
+  claimCashback,
   fetchClaimContext,
   requestClaimOtp,
   toIndianE164,
   verifyClaimOtp,
 } from '@/lib/identity-api';
 
-type Step = 'loading' | 'phone' | 'otp' | 'success' | 'error';
+type Step = 'loading' | 'phone' | 'otp' | 'upi' | 'success' | 'error';
 
 interface ClaimFlowProps {
   token: string;
@@ -23,6 +24,8 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
   const [phoneE164, setPhoneE164] = useState('');
   const [otp, setOtp] = useState('');
   const [consent, setConsent] = useState(false);
+  const [claimJwt, setClaimJwt] = useState('');
+  const [upiVpa, setUpiVpa] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -30,8 +33,11 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
     fetchClaimContext(token)
       .then((ctx) => {
         setContext(ctx);
-        if (ctx.already_claimed) {
-          setMessage('This bill was already claimed.');
+        if (ctx.already_claimed && ctx.payout_status === 'paid') {
+          setMessage('This bill was already claimed and cashback was paid.');
+          setStep('success');
+        } else if (ctx.already_claimed && ctx.payout_status && ctx.payout_status !== 'failed') {
+          setMessage('This bill was already claimed — cashback is still processing.');
           setStep('success');
         } else {
           setStep('phone');
@@ -59,10 +65,28 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
     setError('');
     try {
       const result = await verifyClaimOtp(token, phoneE164, otp, consent);
+      setClaimJwt(result.claim_jwt);
+      setMessage(result.message);
+      if (result.payout_status === 'paid') {
+        setStep('success');
+      } else if (result.payout_status === 'pending' || result.payout_status === 'processing') {
+        setStep('success');
+      } else {
+        setStep('upi');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'OTP verification failed');
+    }
+  }
+
+  async function handleCashback() {
+    setError('');
+    try {
+      const result = await claimCashback(claimJwt, upiVpa);
       setMessage(result.message);
       setStep('success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'OTP verification failed');
+      setError(err instanceof Error ? err.message : 'Cashback failed');
     }
   }
 
@@ -79,6 +103,9 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
       <div>
         <h1>All set</h1>
         <p className="muted">{message}</p>
+        {context ? (
+          <p className="muted">Cashback: ₹{context.cashback_amount_inr}</p>
+        ) : null}
       </div>
     );
   }
@@ -136,6 +163,28 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
           />
           <Button type="button" onClick={handleVerifyOtp} disabled={otp.length < 4}>
             Verify & claim
+          </Button>
+        </div>
+      ) : null}
+
+      {step === 'upi' ? (
+        <div className="form-block">
+          <label htmlFor="upi">UPI ID for cashback</label>
+          <input
+            id="upi"
+            type="text"
+            inputMode="text"
+            placeholder="yourname@upi"
+            value={upiVpa}
+            onChange={(e) => setUpiVpa(e.target.value)}
+            autoComplete="off"
+          />
+          <Button
+            type="button"
+            onClick={handleCashback}
+            disabled={!upiVpa.includes('@') || !claimJwt}
+          >
+            Get ₹{context?.cashback_amount_inr ?? ''} cashback
           </Button>
         </div>
       ) : null}

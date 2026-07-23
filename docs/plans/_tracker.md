@@ -6,13 +6,14 @@ Last updated: 2026-07-23
 
 | Milestone | Branch | Status | Notes |
 |---|---|---|---|
-| WhatsApp dispatch | `feature/whatsapp-dispatch` | implemented | Meta + Gupshup; unit+integration green; ready to commit |
+| Cashback payout (RazorpayX) | `feature/cashback-payout` | implemented | Mock payout + claim-web UPI step; ready to commit |
 
 ## Queue
 
 | Milestone | Depends on | Notes |
 |---|---|---|
-| Cashback payout (RazorpayX) | Identity on `dev` | Can run later |
+| Owner dashboard + Auth0 | Tenant auth | Later Phase 0 / B2B |
+| Terraform / EKS | Infra | Defer until MVP path is solid |
 
 ## Completed
 
@@ -23,3 +24,4 @@ Last updated: 2026-07-23
 | Identity claim + OTP | `feature/identity-claim-otp` | claim-web + identity + Kafka unmasked |
 | Margin offer engine | `feature/margin-offer-engine` | identity.unmasked → offer.ready |
 | Copy + Decay (parallel) | `feature/copy-llm-orchestrator` | Template copy + habit profiles → message.generated |
+| WhatsApp dispatch | `feature/whatsapp-dispatch` | Meta + Gupshup → whatsapp.delivered (PR #5) |

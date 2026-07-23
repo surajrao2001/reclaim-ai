@@ -16,6 +16,7 @@ class ClaimContextRow:
     already_claimed: bool
     existing_customer_id: UUID | None
     existing_claim_id: UUID | None
+    payout_status: str | None
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,18 @@ class ClaimRecord:
     customer_id: UUID
     aggregator_order_id: UUID
     tenant_id: UUID
+
+
+@dataclass(frozen=True)
+class ClaimPayoutRow:
+    claim_id: UUID
+    customer_id: UUID
+    aggregator_order_id: UUID
+    cashback_amount: Decimal
+    payout_status: str | None
+    upi_txn_ref: str | None
+    upi_vpa: str | None
+    payout_idempotency_key: str | None
 
 
 class Database:
@@ -42,7 +55,8 @@ class Database:
                 ao.petpooja_order_id,
                 ao.gross_amount,
                 ic.id AS claim_id,
-                ic.customer_id AS existing_customer_id
+                ic.customer_id AS existing_customer_id,
+                ic.payout_status
             FROM tenancy.tenants t
             JOIN commerce.aggregator_orders ao
               ON ao.tenant_id = t.id
@@ -67,6 +81,7 @@ class Database:
             already_claimed=row["claim_id"] is not None,
             existing_customer_id=row["existing_customer_id"],
             existing_claim_id=row["claim_id"],
+            payout_status=row["payout_status"],
         )
 
     async def get_claim_by_order_id(self, aggregator_order_id: UUID) -> ClaimRecord | None:
@@ -90,6 +105,188 @@ class Database:
             customer_id=row["customer_id"],
             aggregator_order_id=row["aggregator_order_id"],
             tenant_id=row["tenant_id"],
+        )
+
+    async def get_claim_payout(self, claim_id: UUID) -> ClaimPayoutRow | None:
+        row = await self._pool.fetchrow(
+            """
+            SELECT id AS claim_id,
+                   customer_id,
+                   aggregator_order_id,
+                   cashback_amount,
+                   payout_status,
+                   upi_txn_ref,
+                   upi_vpa,
+                   payout_idempotency_key
+            FROM identity.identity_claims
+            WHERE id = $1
+            LIMIT 1
+            """,
+            claim_id,
+        )
+        if row is None:
+            return None
+        return ClaimPayoutRow(
+            claim_id=row["claim_id"],
+            customer_id=row["customer_id"],
+            aggregator_order_id=row["aggregator_order_id"],
+            cashback_amount=row["cashback_amount"] or Decimal("0"),
+            payout_status=row["payout_status"],
+            upi_txn_ref=row["upi_txn_ref"],
+            upi_vpa=row["upi_vpa"],
+            payout_idempotency_key=row["payout_idempotency_key"],
+        )
+
+    async def get_claim_by_upi_txn_ref(self, upi_txn_ref: str) -> ClaimPayoutRow | None:
+        row = await self._pool.fetchrow(
+            """
+            SELECT id AS claim_id,
+                   customer_id,
+                   aggregator_order_id,
+                   cashback_amount,
+                   payout_status,
+                   upi_txn_ref,
+                   upi_vpa,
+                   payout_idempotency_key
+            FROM identity.identity_claims
+            WHERE upi_txn_ref = $1
+            LIMIT 1
+            """,
+            upi_txn_ref,
+        )
+        if row is None:
+            return None
+        return ClaimPayoutRow(
+            claim_id=row["claim_id"],
+            customer_id=row["customer_id"],
+            aggregator_order_id=row["aggregator_order_id"],
+            cashback_amount=row["cashback_amount"] or Decimal("0"),
+            payout_status=row["payout_status"],
+            upi_txn_ref=row["upi_txn_ref"],
+            upi_vpa=row["upi_vpa"],
+            payout_idempotency_key=row["payout_idempotency_key"],
+        )
+
+    async def mark_payout_pending(
+        self,
+        *,
+        claim_id: UUID,
+        upi_vpa: str,
+        idempotency_key: str,
+    ) -> ClaimPayoutRow | None:
+        row = await self._pool.fetchrow(
+            """
+            UPDATE identity.identity_claims
+               SET payout_status = 'pending',
+                   upi_vpa = $2,
+                   payout_idempotency_key = $3,
+                   payout_updated_at = $4
+             WHERE id = $1
+               AND (payout_status IS NULL OR payout_status = 'failed')
+            RETURNING id AS claim_id,
+                      customer_id,
+                      aggregator_order_id,
+                      cashback_amount,
+                      payout_status,
+                      upi_txn_ref,
+                      upi_vpa,
+                      payout_idempotency_key
+            """,
+            claim_id,
+            upi_vpa,
+            idempotency_key,
+            datetime.now(timezone.utc),
+        )
+        if row is None:
+            return None
+        return ClaimPayoutRow(
+            claim_id=row["claim_id"],
+            customer_id=row["customer_id"],
+            aggregator_order_id=row["aggregator_order_id"],
+            cashback_amount=row["cashback_amount"] or Decimal("0"),
+            payout_status=row["payout_status"],
+            upi_txn_ref=row["upi_txn_ref"],
+            upi_vpa=row["upi_vpa"],
+            payout_idempotency_key=row["payout_idempotency_key"],
+        )
+
+    async def mark_payout_processing(
+        self,
+        *,
+        claim_id: UUID,
+        upi_txn_ref: str,
+        status: str = "processing",
+    ) -> ClaimPayoutRow | None:
+        row = await self._pool.fetchrow(
+            """
+            UPDATE identity.identity_claims
+               SET payout_status = $2,
+                   upi_txn_ref = $3,
+                   payout_updated_at = $4
+             WHERE id = $1
+            RETURNING id AS claim_id,
+                      customer_id,
+                      aggregator_order_id,
+                      cashback_amount,
+                      payout_status,
+                      upi_txn_ref,
+                      upi_vpa,
+                      payout_idempotency_key
+            """,
+            claim_id,
+            status,
+            upi_txn_ref,
+            datetime.now(timezone.utc),
+        )
+        if row is None:
+            return None
+        return ClaimPayoutRow(
+            claim_id=row["claim_id"],
+            customer_id=row["customer_id"],
+            aggregator_order_id=row["aggregator_order_id"],
+            cashback_amount=row["cashback_amount"] or Decimal("0"),
+            payout_status=row["payout_status"],
+            upi_txn_ref=row["upi_txn_ref"],
+            upi_vpa=row["upi_vpa"],
+            payout_idempotency_key=row["payout_idempotency_key"],
+        )
+
+    async def update_payout_status(
+        self,
+        *,
+        claim_id: UUID,
+        status: str,
+    ) -> ClaimPayoutRow | None:
+        row = await self._pool.fetchrow(
+            """
+            UPDATE identity.identity_claims
+               SET payout_status = $2,
+                   payout_updated_at = $3
+             WHERE id = $1
+            RETURNING id AS claim_id,
+                      customer_id,
+                      aggregator_order_id,
+                      cashback_amount,
+                      payout_status,
+                      upi_txn_ref,
+                      upi_vpa,
+                      payout_idempotency_key
+            """,
+            claim_id,
+            status,
+            datetime.now(timezone.utc),
+        )
+        if row is None:
+            return None
+        return ClaimPayoutRow(
+            claim_id=row["claim_id"],
+            customer_id=row["customer_id"],
+            aggregator_order_id=row["aggregator_order_id"],
+            cashback_amount=row["cashback_amount"] or Decimal("0"),
+            payout_status=row["payout_status"],
+            upi_txn_ref=row["upi_txn_ref"],
+            upi_vpa=row["upi_vpa"],
+            payout_idempotency_key=row["payout_idempotency_key"],
         )
 
     async def complete_claim(

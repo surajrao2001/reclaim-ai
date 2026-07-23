@@ -54,6 +54,7 @@ class ClaimService:
             "gross_amount": float(row.gross_amount),
             "cashback_amount_inr": self._settings.default_cashback_amount_inr,
             "already_claimed": row.already_claimed,
+            "payout_status": row.payout_status,
         }
 
     async def request_otp(self, claim_token: str, phone: str) -> dict:
@@ -89,6 +90,7 @@ class ClaimService:
 
         existing = await self._db.get_claim_by_order_id(UUID(order_id))
         if existing:
+            existing_payout = await self._db.get_claim_payout(existing.claim_id)
             claim_jwt = sign_claim_jwt(
                 secret=self._settings.claim_jwt_secret,
                 customer_id=existing.customer_id,
@@ -96,10 +98,18 @@ class ClaimService:
                 aggregator_order_id=existing.aggregator_order_id,
                 ttl_seconds=self._settings.claim_jwt_ttl_seconds,
             )
+            payout_status = existing_payout.payout_status if existing_payout else None
+            if payout_status == "paid":
+                message = "This bill was already claimed and cashback was paid."
+            elif payout_status in ("pending", "processing"):
+                message = "This bill was already claimed — cashback is still processing."
+            else:
+                message = "Already verified. Enter your UPI ID to receive cashback."
             return {
                 "claim_jwt": claim_jwt,
                 "customer_id": str(existing.customer_id),
-                "message": "Cashback claim already verified. UPI payout coming soon.",
+                "message": message,
+                "payout_status": payout_status,
             }
 
         if not await self._otp.verify_otp(claim_token, phone_e164, otp):
@@ -144,5 +154,6 @@ class ClaimService:
         return {
             "claim_jwt": claim_jwt,
             "customer_id": str(claim.customer_id),
-            "message": "Verified! Cashback processing — UPI payout coming soon.",
+            "message": "Verified! Enter your UPI ID to receive cashback.",
+            "payout_status": None,
         }

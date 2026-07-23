@@ -83,3 +83,50 @@ async def test_full_claim_flow(client: AsyncClient) -> None:
         },
     )
     assert verify_again.status_code == 200
+
+    claim_jwt = body["claim_jwt"]
+    cashback = await client.post(
+        "/v1/claim/cashback",
+        headers={"Authorization": f"Bearer {claim_jwt}"},
+        json={"upi_vpa": "demo@upi"},
+    )
+    assert cashback.status_code == 200
+    cash_body = cashback.json()
+    assert cash_body["payout_status"] in ("paid", "processing")
+    assert cash_body["upi_txn_ref"]
+
+    cashback_again = await client.post(
+        "/v1/claim/cashback",
+        headers={"Authorization": f"Bearer {claim_jwt}"},
+        json={"upi_vpa": "demo@upi"},
+    )
+    assert cashback_again.status_code == 200
+    assert cashback_again.json()["upi_txn_ref"] == cash_body["upi_txn_ref"]
+
+    # Fresh claim for invalid VPA validation
+    order_id_2 = f"PET_TEST_{uuid.uuid4().hex[:8]}"
+    token_2 = encode_claim_token("pp_out_88219", order_id_2)
+    await _ensure_test_order(pool, order_id_2)
+    phone_2 = "+919911223355"
+    await client.post(
+        "/v1/claim/otp/request",
+        json={"claim_token": token_2, "phone_e164": phone_2},
+    )
+    otp_2 = await app.state.claim_service._otp.peek_otp(token_2, phone_2)
+    verify_2 = await client.post(
+        "/v1/claim/otp/verify",
+        json={
+            "claim_token": token_2,
+            "phone_e164": phone_2,
+            "otp": otp_2,
+            "consent_whatsapp": True,
+        },
+    )
+    jwt_2 = verify_2.json()["claim_jwt"]
+    bad_vpa = await client.post(
+        "/v1/claim/cashback",
+        headers={"Authorization": f"Bearer {jwt_2}"},
+        json={"upi_vpa": "not-valid"},
+    )
+    assert bad_vpa.status_code == 400
+    assert bad_vpa.json()["error"]["code"] == "INVALID_UPI_VPA"
