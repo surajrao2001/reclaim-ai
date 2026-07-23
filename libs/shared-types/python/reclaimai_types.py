@@ -46,6 +46,15 @@ class OfferReadyPayload(TypedDict, total=False):
     direct_order_url: str
 
 
+class MessageGeneratedPayload(TypedDict, total=False):
+    offer_id: str
+    message_body: str
+    selected_discount_value: float
+    llm_model_used: str
+    prompt_version: str
+    cta_url: str
+
+
 class EventEnvelope(TypedDict, total=False):
     event_id: str
     event_type: str
