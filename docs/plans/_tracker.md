@@ -1,21 +1,19 @@
 # ReclaimAI build tracker
 
-Last updated: 2026-07-22
+Last updated: 2026-07-23
 
 ## Active
 
 | Milestone | Branch | Status | Notes |
 |---|---|---|---|
-| Margin offer engine | `feature/margin-offer-engine` | implemented | Unit verified; run migrate + integration with docker |
+| Copy + Decay (parallel) | `feature/copy-llm-orchestrator` | implemented | Template copy + habit profiles; ready to commit |
 
 ## Queue
 
 | Milestone | Depends on | Notes |
 |---|---|---|
+| WhatsApp dispatch | `message.generated` | Meta Cloud API + Gupshup failover |
 | Cashback payout (RazorpayX) | Identity on `dev` | Can run later |
-| Decay prediction service | `identity.unmasked` | Parallel after margin merges |
-| Copy/LLM orchestrator | `offer.ready` | Claude API |
-| WhatsApp dispatch | `message.generated` | Meta + Gupshup failover |
 
 ## Completed
 
@@ -24,3 +22,4 @@ Last updated: 2026-07-22
 | Orchestrator scaffolding | `feature/pos-order-ingest` | plans, AGENTS, cursor rules |
 | POS order ingest | `feature/pos-order-ingest` | webhook → Postgres → Kafka |
 | Identity claim + OTP | `feature/identity-claim-otp` | claim-web + identity + Kafka unmasked |
+| Margin offer engine | `feature/margin-offer-engine` | identity.unmasked → offer.ready |
