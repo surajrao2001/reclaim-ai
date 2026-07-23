@@ -31,6 +31,15 @@ CREATE TABLE IF NOT EXISTS tenancy.staff_users (
     UNIQUE (tenant_id, email)
 );
 
+CREATE TABLE IF NOT EXISTS tenancy.discount_policies (
+    tenant_id UUID PRIMARY KEY REFERENCES tenancy.tenants(id),
+    min_margin_pct NUMERIC(5, 2) NOT NULL DEFAULT 25.00,
+    max_discount_pct NUMERIC(5, 2) NOT NULL DEFAULT 20.00,
+    max_discount_rupees NUMERIC(10, 2) NOT NULL DEFAULT 100.00,
+    food_cost_pct_of_gross NUMERIC(5, 2) NOT NULL DEFAULT 35.00,
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- ===================== CUSTOMER IDENTITY =====================
 CREATE TABLE IF NOT EXISTS identity.customers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -87,12 +96,18 @@ CREATE TABLE IF NOT EXISTS offers.offers (
     tenant_id UUID REFERENCES tenancy.tenants(id),
     customer_id UUID REFERENCES identity.customers(id),
     max_margin_safe_discount_pct NUMERIC(5, 2),
+    max_discount_rupees NUMERIC(10, 2),
+    favorite_dish_name TEXT,
+    source_aggregator_order_id UUID REFERENCES commerce.aggregator_orders(id),
     generated_copy TEXT,
     llm_model_used TEXT,
     status TEXT CHECK (status IN ('pending', 'sent', 'clicked', 'converted', 'expired')),
     scheduled_for TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_offers_source_order
+    ON offers.offers (source_aggregator_order_id);
 
 CREATE TABLE IF NOT EXISTS offers.whatsapp_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -135,3 +150,7 @@ VALUES (
     'starter'
 )
 ON CONFLICT (petpooja_restaurant_id) DO NOTHING;
+
+INSERT INTO tenancy.discount_policies (tenant_id)
+VALUES ('11111111-1111-1111-1111-111111111111')
+ON CONFLICT (tenant_id) DO NOTHING;
