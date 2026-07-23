@@ -1,4 +1,5 @@
 import type {
+  ClaimCashbackResponse,
   ClaimContextResponse,
   ClaimOtpRequestResponse,
   ClaimOtpVerifyResponse,
@@ -53,6 +54,21 @@ export async function verifyClaimOtp(
     }),
   });
   return parseResponse<ClaimOtpVerifyResponse>(response);
+}
+
+export async function claimCashback(
+  claimJwt: string,
+  upiVpa: string,
+): Promise<ClaimCashbackResponse> {
+  const response = await fetch(`${IDENTITY_API}/v1/claim/cashback`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${claimJwt}`,
+    },
+    body: JSON.stringify({ upi_vpa: upiVpa }),
+  });
+  return parseResponse<ClaimCashbackResponse>(response);
 }
 
 export function toIndianE164(digits: string): string {

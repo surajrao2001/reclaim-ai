@@ -75,8 +75,19 @@ CREATE TABLE IF NOT EXISTS identity.identity_claims (
     otp_verified_at TIMESTAMPTZ,
     cashback_amount NUMERIC(10, 2),
     upi_txn_ref TEXT,
+    payout_status TEXT CHECK (
+        payout_status IS NULL
+        OR payout_status IN ('pending', 'processing', 'paid', 'failed')
+    ),
+    upi_vpa TEXT,
+    payout_idempotency_key TEXT,
+    payout_updated_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_identity_claims_payout_idempotency
+    ON identity.identity_claims (payout_idempotency_key)
+    WHERE payout_idempotency_key IS NOT NULL;
 
 -- ===================== HABIT / DECAY MODEL =====================
 CREATE TABLE IF NOT EXISTS offers.customer_habit_profiles (

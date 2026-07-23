@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     default_cashback_amount_inr: int = 100
     cors_origins: str = "http://localhost:3101"
 
+    razorpayx_key_id: str = ""
+    razorpayx_key_secret: str = ""
+    razorpayx_account_number: str = ""
+    razorpayx_webhook_secret: str = "dev_razorpayx_webhook_secret"
+    razorpayx_base_url: str = "https://api.razorpay.com/v1"
+    razorpayx_mock: str | None = None
+
     @property
     def asyncpg_dsn(self) -> str:
         return self.database_url.replace("postgresql+psycopg://", "postgresql://")
@@ -49,6 +56,12 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def razorpayx_mock_enabled(self) -> bool:
+        if self.razorpayx_mock is not None and self.razorpayx_mock != "":
+            return self.razorpayx_mock.lower() == "true"
+        return len(self.razorpayx_key_id) == 0
 
 
 settings = Settings()

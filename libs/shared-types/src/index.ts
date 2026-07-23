@@ -100,6 +100,8 @@ export interface ApiErrorBody {
   };
 }
 
+export type PayoutStatus = 'pending' | 'processing' | 'paid' | 'failed';
+
 export interface ClaimContextResponse {
   claim_token: string;
   tenant_name: string;
@@ -108,6 +110,7 @@ export interface ClaimContextResponse {
   gross_amount: number;
   cashback_amount_inr: number;
   already_claimed: boolean;
+  payout_status?: PayoutStatus | null;
 }
 
 export interface ClaimOtpRequest {
@@ -129,6 +132,19 @@ export interface ClaimOtpVerifyRequest {
 export interface ClaimOtpVerifyResponse {
   claim_jwt: string;
   customer_id: string;
+  message: string;
+  payout_status?: PayoutStatus | null;
+}
+
+export interface ClaimCashbackRequest {
+  upi_vpa: string;
+}
+
+export interface ClaimCashbackResponse {
+  claim_id: string;
+  payout_status: PayoutStatus;
+  cashback_amount_inr: number;
+  upi_txn_ref: string;
   message: string;
 }
 
