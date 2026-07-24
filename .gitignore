@@ -65,3 +65,6 @@ coverage/
 # Misc
 *.local
 .cache/
+
+# Local planning / ADRs (kept on disk, not versioned)
+docs/

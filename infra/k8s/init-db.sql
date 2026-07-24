@@ -168,3 +168,13 @@ ON CONFLICT (petpooja_restaurant_id) DO NOTHING;
 INSERT INTO tenancy.discount_policies (tenant_id)
 VALUES ('11111111-1111-1111-1111-111111111111')
 ON CONFLICT (tenant_id) DO NOTHING;
+
+INSERT INTO tenancy.staff_users (id, tenant_id, email, role, auth0_sub)
+VALUES (
+    '22222222-2222-2222-2222-222222222222',
+    '11111111-1111-1111-1111-111111111111',
+    'owner@demo.reclaimai.local',
+    'owner',
+    'dev|demo-owner'
+)
+ON CONFLICT (tenant_id, email) DO NOTHING;

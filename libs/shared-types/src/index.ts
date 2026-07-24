@@ -148,6 +148,28 @@ export interface ClaimCashbackResponse {
   message: string;
 }
 
+export interface StaffMeResponse {
+  staff_id: string;
+  email: string;
+  role: StaffRole;
+  tenant_id: string;
+  tenant_name: string;
+  auth_mode: 'auth0' | 'dev_bypass';
+}
+
+export interface DashboardSummaryResponse {
+  tenant_id: string;
+  tenant_name: string;
+  window_days: number;
+  orders_count: number;
+  claims_count: number;
+  unmask_rate: number;
+  offers_sent: number;
+  cashback_paid_count: number;
+  cashback_paid_inr: number;
+  gross_order_amount_inr: number;
+}
+
 export const KAFKA_TOPICS = {
   ORDER_CREATED: 'reclaimai.order.created.v1',
   IDENTITY_UNMASKED: 'reclaimai.identity.unmasked.v1',
