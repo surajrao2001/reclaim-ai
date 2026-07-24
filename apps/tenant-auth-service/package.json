@@ -2,14 +2,16 @@
   "name": "@reclaimai/tenant-auth-service",
   "version": "0.1.0",
   "private": true,
-  "description": "Restaurant accounts, RBAC, billing plan",
+  "description": "Restaurant accounts, RBAC, dashboard summary",
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "node dist/main.js",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "jest"
+    "test": "jest --config ./jest.config.js --runInBand --forceExit",
+    "test:unit": "jest --config ./jest.config.js --testPathPattern=unit --runInBand --forceExit",
+    "test:integration": "jest --config ./jest.config.js --testPathPattern=integration --runInBand --forceExit"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -17,6 +19,7 @@
     "@nestjs/platform-express": "^10.4.15",
     "@reclaimai/shared-auth": "*",
     "@reclaimai/shared-types": "*",
+    "pg": "^8.13.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -27,9 +30,9 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
-    "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   }
 }
