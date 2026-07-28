@@ -64,6 +64,10 @@ h1 {
   max-width: 28rem;
 }
 
+.login-secondary {
+  margin-top: 0.85rem;
+}
+
 .dash-header {
   display: flex;
   justify-content: space-between;

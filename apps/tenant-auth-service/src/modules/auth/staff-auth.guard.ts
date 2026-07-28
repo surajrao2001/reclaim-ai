@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { createOidcVerifier, verifyDevStaffToken } from '@reclaimai/shared-auth';
 import type { Request } from 'express';
-import { APP_CONFIG, type AppConfig } from '../../config/configuration';
+import {
+  APP_CONFIG,
+  DEV_AUTH0_SUB_PLACEHOLDER,
+  type AppConfig,
+} from '../../config/configuration';
 import { apiError } from '../../common/api-error';
 import { DatabaseService, type StaffRow } from '../database/database.service';
 import { HttpStatus } from '@nestjs/common';
@@ -65,7 +69,10 @@ export class StaffAuthGuard implements CanActivate {
     let staff = await this.db.findStaffByAuth0Sub(sub);
     if (!staff && email) {
       staff = await this.db.findStaffByEmail(email);
-      if (staff && !staff.auth0_sub) {
+      const canLink =
+        staff &&
+        (!staff.auth0_sub || staff.auth0_sub === DEV_AUTH0_SUB_PLACEHOLDER);
+      if (canLink && staff) {
         await this.db.linkAuth0Sub(staff.id, sub);
         staff = { ...staff, auth0_sub: sub };
       }

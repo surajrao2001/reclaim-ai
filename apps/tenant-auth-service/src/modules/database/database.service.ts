@@ -88,7 +88,12 @@ export class DatabaseService implements OnModuleDestroy {
     await this.query(
       `UPDATE tenancy.staff_users
        SET auth0_sub = $2
-       WHERE id = $1 AND (auth0_sub IS NULL OR auth0_sub = $2)`,
+       WHERE id = $1
+         AND (
+           auth0_sub IS NULL
+           OR auth0_sub = $2
+           OR auth0_sub = 'dev|demo-owner'
+         )`,
       [staffId, auth0Sub],
     );
   }

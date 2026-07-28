@@ -58,3 +58,10 @@ Workers must follow the active plan file and must not change shared contracts un
   }
 }
 ```
+
+## Dashboard Auth0 (hosted demo)
+
+- Hosted/demo: `AUTH_DEV_BYPASS=false`, `NEXT_PUBLIC_AUTH_DEV_BYPASS=false`, Auth0 SPA vars set (see `.env.demo.example`).
+- Shared demo Auth0 user email should match `AUTH0_DEMO_USER_EMAIL` (default `owner@demo.reclaimai.local` on Demo Kitchen).
+- Map `tenancy.staff_users.auth0_sub` to that Auth0 user's `sub`, or leave the seed `dev|demo-owner` placeholder and let first login link by email.
+- Auth0 app callback / logout / web origins: see `apps/dashboard-web/AGENTS.md`.
