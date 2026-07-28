@@ -65,6 +65,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-reclaimai}:${POSTGRES_PASSWORD:-reclaimai_demo_password}@postgres:5432/${POSTGRES_DB:-reclaimai}
       PORT: 3002
       CLAIM_WEB_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8088}
+      CORS_ORIGINS: ${PUBLIC_BASE_URL:-http://localhost:8088}
       KAFKA_CLIENT_ID: pos-integration-service
     depends_on:
       postgres:
@@ -249,8 +250,11 @@ services:
       PORT: 3101
       HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_IDENTITY_API_URL: /api/identity
+      NEXT_PUBLIC_POS_API_URL: /api/pos
     depends_on:
       identity-resolution-service:
+        condition: service_healthy
+      pos-integration-service:
         condition: service_healthy
     healthcheck:
       test:

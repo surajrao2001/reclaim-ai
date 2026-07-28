@@ -8,6 +8,10 @@ export interface AppConfig {
   claimWebBaseUrl: string;
   defaultCashbackAmountInr: string;
   webhookIdempotencyTtlSeconds: number;
+  showcasePetpoojaRestId: string;
+  demoSimulateRateLimitMax: number;
+  demoSimulateRateLimitWindowSeconds: number;
+  corsOrigins: string[];
 }
 
 export function loadConfig(): AppConfig {
@@ -29,6 +33,18 @@ export function loadConfig(): AppConfig {
     webhookIdempotencyTtlSeconds: Number(
       process.env.WEBHOOK_IDEMPOTENCY_TTL_SECONDS ?? 60 * 60 * 24 * 7,
     ),
+    showcasePetpoojaRestId:
+      process.env.SHOWCASE_PETPOOJA_REST_ID ?? 'pp_out_88219',
+    demoSimulateRateLimitMax: Number(
+      process.env.DEMO_SIMULATE_RATE_LIMIT_MAX ?? 5,
+    ),
+    demoSimulateRateLimitWindowSeconds: Number(
+      process.env.DEMO_SIMULATE_RATE_LIMIT_WINDOW_SECONDS ?? 600,
+    ),
+    corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3101')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean),
   };
 }
 
