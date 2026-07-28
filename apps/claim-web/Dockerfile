@@ -12,6 +12,7 @@ FROM deps AS build
 WORKDIR /app
 
 ENV NEXT_PUBLIC_IDENTITY_API_URL=/api/identity
+ENV NEXT_PUBLIC_POS_API_URL=/api/pos
 
 COPY apps/claim-web apps/claim-web
 COPY libs/shared-types libs/shared-types

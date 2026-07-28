@@ -41,3 +41,6 @@ npm run test:integration --workspace=@reclaimai/pos-integration-service
 
 `POST /v1/webhooks/petpooja/order`  
 Header: `X-Petpooja-HMAC-Signature` (hex HMAC-SHA256 of raw body)
+
+`POST /v1/demo/simulate-order`  
+Public demo entry: builds a Petpooja-shaped payload for showcase `restID` (`pp_out_88219`), signs with `PETPOOJA_WEBHOOK_SECRET`, and invokes the same webhook service. Rate limited (default 5 / IP / 10 min via Redis). Returns `{ order_id, claim_url, qr_code_url, ... }`.

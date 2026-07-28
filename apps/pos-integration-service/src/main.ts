@@ -9,6 +9,9 @@ async function bootstrap() {
     bufferLogs: true,
     rawBody: true,
   });
+  app.enableCors({
+    origin: config.corsOrigins,
+  });
   await app.listen(config.port);
   Logger.log(`pos-integration-service listening on :${config.port}`, 'Bootstrap');
 }

@@ -5,5 +5,6 @@ import { PetpoojaWebhookService } from './petpooja-webhook.service';
 @Module({
   controllers: [PetpoojaWebhookController],
   providers: [PetpoojaWebhookService],
+  exports: [PetpoojaWebhookService],
 })
 export class PetpoojaWebhookModule {}

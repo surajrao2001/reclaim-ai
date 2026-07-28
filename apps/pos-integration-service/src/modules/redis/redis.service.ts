@@ -44,4 +44,25 @@ export class RedisService implements OnModuleDestroy {
       this.ttlSeconds,
     );
   }
+
+  demoSimulateRateLimitKey(ip: string): string {
+    return `demo:simulate-order:ip:${ip}`;
+  }
+
+  /**
+   * Increments the per-IP counter. Returns the new count and whether the
+   * caller is still within the allowed window.
+   */
+  async consumeDemoSimulateRateLimit(
+    ip: string,
+    maxRequests: number,
+    windowSeconds: number,
+  ): Promise<{ count: number; allowed: boolean }> {
+    const key = this.demoSimulateRateLimitKey(ip);
+    const count = await this.client.incr(key);
+    if (count === 1) {
+      await this.client.expire(key, windowSeconds);
+    }
+    return { count, allowed: count <= maxRequests };
+  }
 }
