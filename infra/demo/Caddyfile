@@ -1,0 +1,41 @@
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	encode gzip
+
+	@dashboard path /dashboard /dashboard/*
+	handle @dashboard {
+		reverse_proxy dashboard-web:3100
+	}
+
+	handle_path /api/pos/* {
+		reverse_proxy pos-integration-service:3002
+	}
+
+	handle_path /api/identity/* {
+		reverse_proxy identity-resolution-service:8001
+	}
+
+	handle_path /api/margin/* {
+		reverse_proxy margin-offer-engine:8002
+	}
+
+	handle_path /api/copy/* {
+		reverse_proxy copy-llm-orchestrator:8004
+	}
+
+	handle_path /api/whatsapp/* {
+		reverse_proxy whatsapp-dispatch-service:3003
+	}
+
+	handle_path /api/tenant-auth/* {
+		reverse_proxy tenant-auth-service:3001
+	}
+
+	handle {
+		reverse_proxy claim-web:3101
+	}
+}
