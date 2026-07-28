@@ -12,6 +12,9 @@ export interface AppConfig {
   environment: string;
 }
 
+/** Local-only seed placeholder; replaced on first Auth0 login by email link. */
+export const DEV_AUTH0_SUB_PLACEHOLDER = 'dev|demo-owner';
+
 export function loadConfig(): AppConfig {
   const databaseUrl = (
     process.env.DATABASE_URL ??
@@ -20,10 +23,17 @@ export function loadConfig(): AppConfig {
 
   const auth0Domain = (process.env.AUTH0_DOMAIN ?? '').replace(/\/$/, '');
   const bypassEnv = process.env.AUTH_DEV_BYPASS;
-  const authDevBypass =
+  const environment = process.env.NODE_ENV ?? 'development';
+
+  let authDevBypass =
     bypassEnv !== undefined && bypassEnv !== ''
       ? bypassEnv === 'true'
       : auth0Domain.length === 0;
+
+  // Hosted / production never allows HS256 demo tokens.
+  if (environment === 'production') {
+    authDevBypass = false;
+  }
 
   const issuer = auth0Domain ? `https://${auth0Domain}/` : '';
   const jwksUrl =
@@ -40,9 +50,10 @@ export function loadConfig(): AppConfig {
     auth0Audience: process.env.AUTH0_AUDIENCE ?? 'https://api.reclaimai.local',
     auth0JwksUrl: jwksUrl,
     auth0Issuer: issuer,
-    demoStaffSub: 'dev|demo-owner',
-    demoStaffEmail: 'owner@demo.reclaimai.local',
-    environment: process.env.NODE_ENV ?? 'development',
+    demoStaffSub: process.env.AUTH0_DEMO_USER_SUB ?? DEV_AUTH0_SUB_PLACEHOLDER,
+    demoStaffEmail:
+      process.env.AUTH0_DEMO_USER_EMAIL ?? 'owner@demo.reclaimai.local',
+    environment,
   };
 }
 

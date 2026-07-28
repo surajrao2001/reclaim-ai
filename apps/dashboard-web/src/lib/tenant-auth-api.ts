@@ -8,6 +8,9 @@ const TENANT_AUTH =
   process.env.NEXT_PUBLIC_TENANT_AUTH_URL ?? 'http://localhost:3001';
 
 const TOKEN_KEY = 'reclaim_staff_access_token';
+const TOKEN_MODE_KEY = 'reclaim_staff_token_mode';
+
+export type StoredTokenMode = 'auth0' | 'dev_bypass';
 
 async function parseResponse<T>(response: Response): Promise<T> {
   const body = (await response.json()) as T | ApiErrorBody;
@@ -23,12 +26,20 @@ export function getStoredToken(): string | null {
   return sessionStorage.getItem(TOKEN_KEY);
 }
 
-export function clearStoredToken(): void {
-  sessionStorage.removeItem(TOKEN_KEY);
+export function getStoredTokenMode(): StoredTokenMode | null {
+  if (typeof window === 'undefined') return null;
+  const mode = sessionStorage.getItem(TOKEN_MODE_KEY);
+  return mode === 'auth0' || mode === 'dev_bypass' ? mode : null;
 }
 
-export function storeToken(token: string): void {
+export function clearStoredToken(): void {
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_MODE_KEY);
+}
+
+export function storeToken(token: string, mode: StoredTokenMode = 'dev_bypass'): void {
   sessionStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem(TOKEN_MODE_KEY, mode);
 }
 
 export function isDevBypassEnabled(): boolean {
@@ -40,7 +51,7 @@ export async function requestDevToken(): Promise<string> {
     method: 'POST',
   });
   const body = await parseResponse<{ access_token: string }>(response);
-  storeToken(body.access_token);
+  storeToken(body.access_token, 'dev_bypass');
   return body.access_token;
 }
 

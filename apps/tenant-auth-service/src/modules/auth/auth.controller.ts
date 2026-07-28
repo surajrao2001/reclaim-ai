@@ -12,18 +12,12 @@ export class AuthController {
 
   @Post('auth/dev-token')
   async issueDevToken(): Promise<{ access_token: string; token_type: string; expires_in: number }> {
-    if (!this.config.authDevBypass) {
+    // authDevBypass is forced false when NODE_ENV=production (see loadConfig).
+    if (!this.config.authDevBypass || this.config.environment === 'production') {
       throw apiError(
         HttpStatus.FORBIDDEN,
         'DEV_BYPASS_DISABLED',
         'Dev bypass is disabled',
-      );
-    }
-    if (this.config.environment === 'production') {
-      throw apiError(
-        HttpStatus.FORBIDDEN,
-        'DEV_BYPASS_DISABLED',
-        'Dev bypass is not available in production',
       );
     }
 

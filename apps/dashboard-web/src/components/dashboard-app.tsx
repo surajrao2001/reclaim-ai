@@ -4,12 +4,22 @@ import { useEffect, useState } from 'react';
 import { Button } from '@reclaimai/ui-components';
 import type { DashboardSummaryResponse, StaffMeResponse } from '@reclaimai/shared-types';
 import {
+  getAuth0AccessToken,
+  handleAuth0Redirect,
+  hasAuth0RedirectParams,
+  isAuth0Configured,
+  loginWithAuth0,
+  logoutAuth0,
+} from '@/lib/auth0';
+import {
   clearStoredToken,
   fetchMe,
   fetchSummary,
   getStoredToken,
+  getStoredTokenMode,
   isDevBypassEnabled,
   requestDevToken,
+  storeToken,
 } from '@/lib/tenant-auth-api';
 
 type View = 'loading' | 'login' | 'dashboard' | 'error';
@@ -23,6 +33,7 @@ export function DashboardApp() {
   const [me, setMe] = useState<StaffMeResponse | null>(null);
   const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   async function loadWithToken(token: string) {
     const profile = await fetchMe(token);
@@ -33,33 +44,79 @@ export function DashboardApp() {
   }
 
   useEffect(() => {
-    const token = getStoredToken();
-    if (!token) {
-      setView('login');
-      return;
+    let cancelled = false;
+
+    async function bootstrap() {
+      try {
+        if (isAuth0Configured()) {
+          const auth0Token = hasAuth0RedirectParams()
+            ? await handleAuth0Redirect()
+            : await getAuth0AccessToken();
+          if (auth0Token) {
+            storeToken(auth0Token, 'auth0');
+            if (!cancelled) {
+              await loadWithToken(auth0Token);
+            }
+            return;
+          }
+        }
+
+        const token = getStoredToken();
+        if (!token) {
+          if (!cancelled) setView('login');
+          return;
+        }
+        await loadWithToken(token);
+      } catch (err) {
+        clearStoredToken();
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Login failed');
+          setView('login');
+        }
+      }
     }
-    loadWithToken(token).catch((err: Error) => {
-      clearStoredToken();
-      setError(err.message);
-      setView('login');
-    });
+
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  async function handleAuth0Login() {
+    setError('');
+    setBusy(true);
+    try {
+      await loginWithAuth0();
+    } catch (err) {
+      setBusy(false);
+      setError(err instanceof Error ? err.message : 'Auth0 login failed');
+      setView('login');
+    }
+  }
 
   async function handleDevLogin() {
     setError('');
+    setBusy(true);
     try {
       const token = await requestDevToken();
       await loadWithToken(token);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
       setView('login');
+    } finally {
+      setBusy(false);
     }
   }
 
-  function handleSignOut() {
+  async function handleSignOut() {
+    const mode = getStoredTokenMode();
     clearStoredToken();
     setMe(null);
     setSummary(null);
+    if (mode === 'auth0' && isAuth0Configured()) {
+      await logoutAuth0();
+      return;
+    }
     setView('login');
   }
 
@@ -68,6 +125,8 @@ export function DashboardApp() {
   }
 
   if (view === 'login') {
+    const showAuth0 = isAuth0Configured();
+    const showBypass = isDevBypassEnabled();
     return (
       <div className="login">
         <p className="brand">ReclaimAI</p>
@@ -75,15 +134,24 @@ export function DashboardApp() {
         <p className="lede">
           Monitor unmask rates, offers sent, and cashback paid for your kitchen.
         </p>
-        {isDevBypassEnabled() ? (
-          <Button type="button" onClick={handleDevLogin}>
-            Continue as Demo Owner
+        {showAuth0 ? (
+          <Button type="button" onClick={handleAuth0Login} disabled={busy}>
+            Sign in with Auth0
           </Button>
-        ) : (
+        ) : null}
+        {showBypass ? (
+          <div className={showAuth0 ? 'login-secondary' : undefined}>
+            <Button type="button" onClick={handleDevLogin} disabled={busy}>
+              Continue as Demo Owner
+            </Button>
+          </div>
+        ) : null}
+        {!showAuth0 && !showBypass ? (
           <p className="muted">
-            Set Auth0 env vars (or enable AUTH_DEV_BYPASS) to sign in.
+            Set NEXT_PUBLIC_AUTH0_* env vars (or enable NEXT_PUBLIC_AUTH_DEV_BYPASS for local
+            only).
           </p>
-        )}
+        ) : null}
         {error ? <p className="error">{error}</p> : null}
       </div>
     );
@@ -98,6 +166,7 @@ export function DashboardApp() {
           <p className="muted">
             {me?.email} · {me?.role}
             {me?.auth_mode === 'dev_bypass' ? ' · dev bypass' : ''}
+            {me?.auth_mode === 'auth0' ? ' · Auth0' : ''}
           </p>
         </div>
         <Button type="button" onClick={handleSignOut}>
