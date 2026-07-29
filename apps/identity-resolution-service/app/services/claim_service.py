@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -9,10 +8,11 @@ from app.core.errors import api_error
 from app.services.claim_jwt import sign_claim_jwt
 from app.services.claim_token import InvalidClaimTokenError, decode_claim_token
 from app.services.database import Database
+from app.services.email_address import normalize_email
 from app.services.kafka_producer import KafkaProducer
 from app.services.otp import OtpService
+from app.services.otp_delivery import OtpDeliveryError, OtpDeliveryProvider, OtpDestination
 from app.services.phone import hash_phone_e164, normalize_phone_e164
-from app.services.sms import SmsService
 
 logger = structlog.get_logger(__name__)
 
@@ -22,13 +22,13 @@ class ClaimService:
         self,
         db: Database,
         otp: OtpService,
-        sms: SmsService,
+        otp_delivery: OtpDeliveryProvider,
         kafka: KafkaProducer,
         settings: Settings,
     ) -> None:
         self._db = db
         self._otp = otp
-        self._sms = sms
+        self._otp_delivery = otp_delivery
         self._kafka = kafka
         self._settings = settings
 
@@ -57,7 +57,7 @@ class ClaimService:
             "payout_status": row.payout_status,
         }
 
-    async def request_otp(self, claim_token: str, phone: str) -> dict:
+    async def request_otp(self, claim_token: str, phone: str, email: str) -> dict:
         await self.get_context(claim_token)
 
         try:
@@ -66,12 +66,32 @@ class ClaimService:
             raise api_error(400, "INVALID_PHONE", "Phone number must be valid E.164 or Indian mobile") from exc
 
         try:
+            email_norm = normalize_email(email)
+        except ValueError as exc:
+            raise api_error(400, "INVALID_EMAIL", "A valid email address is required for OTP delivery") from exc
+
+        try:
             otp = await self._otp.issue_otp(claim_token, phone_e164)
         except PermissionError as exc:
             raise api_error(429, "OTP_RATE_LIMITED", str(exc), retryable=True) from exc
 
-        await self._sms.send_otp(phone_e164, otp)
-        return {"expires_in_seconds": self._settings.otp_ttl_seconds}
+        try:
+            await self._otp_delivery.send_otp(
+                OtpDestination(phone_e164=phone_e164, email=email_norm),
+                otp,
+            )
+        except OtpDeliveryError as exc:
+            raise api_error(
+                503,
+                "OTP_DELIVERY_FAILED",
+                str(exc),
+                retryable=exc.retryable,
+            ) from exc
+
+        return {
+            "expires_in_seconds": self._settings.otp_ttl_seconds,
+            "delivery_channel": self._otp_delivery.channel,
+        }
 
     async def verify_otp(
         self,

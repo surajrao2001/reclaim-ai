@@ -52,7 +52,11 @@ async def test_full_claim_flow(client: AsyncClient) -> None:
     phone = "+919911223344"
     req = await client.post(
         "/v1/claim/otp/request",
-        json={"claim_token": token, "phone_e164": phone},
+        json={
+            "claim_token": token,
+            "phone_e164": phone,
+            "email": "visitor@example.com",
+        },
     )
     assert req.status_code == 200
 
@@ -110,7 +114,11 @@ async def test_full_claim_flow(client: AsyncClient) -> None:
     phone_2 = "+919911223355"
     await client.post(
         "/v1/claim/otp/request",
-        json={"claim_token": token_2, "phone_e164": phone_2},
+        json={
+            "claim_token": token_2,
+            "phone_e164": phone_2,
+            "email": "visitor2@example.com",
+        },
     )
     otp_2 = await app.state.claim_service._otp.peek_otp(token_2, phone_2)
     verify_2 = await client.post(

@@ -30,7 +30,7 @@ async def get_claim_context(token: str, request: Request) -> dict:
 @router.post("/otp/request")
 async def request_otp(body: ClaimOtpRequestBody, request: Request) -> dict:
     service = get_claim_service(request)
-    return await service.request_otp(body.claim_token, body.phone_e164)
+    return await service.request_otp(body.claim_token, body.phone_e164, body.email)
 
 
 @router.post("/otp/verify")

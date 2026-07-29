@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 class ClaimOtpRequestBody(BaseModel):
     claim_token: str = Field(min_length=1)
     phone_e164: str = Field(min_length=8)
+    email: str = Field(min_length=3, max_length=320)
 
 
 class ClaimOtpVerifyBody(BaseModel):

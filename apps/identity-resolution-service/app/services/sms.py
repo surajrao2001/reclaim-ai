@@ -1,33 +1,23 @@
-import structlog
-from email.message import EmailMessage
+"""Backward-compatible SMTP OTP helper. Prefer otp_delivery providers."""
 
-import aiosmtplib
-
-logger = structlog.get_logger(__name__)
+from app.core.config import Settings
+from app.services.otp_delivery import OtpDestination, SmtpOtpProvider
 
 
 class SmsService:
+    """Legacy wrapper around SmtpOtpProvider (Mailhog local path)."""
+
     def __init__(self, *, host: str, port: int, sender: str) -> None:
-        self._host = host
-        self._port = port
-        self._sender = sender
+        settings = Settings()
+        self._provider = SmtpOtpProvider(
+            host=host,
+            port=port,
+            sender=sender,
+            settings=settings,
+        )
 
     async def send_otp(self, phone_e164: str, otp: str) -> None:
-        message = EmailMessage()
-        message["From"] = self._sender
-        message["To"] = f"sms:{phone_e164}"
-        message["Subject"] = "ReclaimAI OTP"
-        message.set_content(f"Your ReclaimAI verification code is {otp}. Valid for 5 minutes.")
-
-        try:
-            await aiosmtplib.send(
-                message,
-                hostname=self._host,
-                port=self._port,
-                start_tls=False,
-            )
-        except Exception as exc:
-            logger.warning("smtp_send_failed", error=str(exc))
-            # Local dev: OTP is also logged; do not fail the request if Mailhog is down.
-
-        logger.info("otp_dispatched", phone_suffix=phone_e164[-4:], otp=otp)
+        await self._provider.send_otp(
+            OtpDestination(phone_e164=phone_e164, email=None),
+            otp,
+        )
