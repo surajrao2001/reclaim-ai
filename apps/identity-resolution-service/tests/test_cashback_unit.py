@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import jwt
 import pytest
 
-from app.core.config import Settings
+from app.core.config import Settings, assert_live_razorpayx_credentials
 from app.services.cashback_service import CashbackService
 from app.services.claim_jwt import sign_claim_jwt, verify_claim_jwt
 from app.services.database import ClaimPayoutRow
@@ -197,3 +197,63 @@ def test_claim_jwt_payload_still_works() -> None:
     )
     payload = jwt.decode(token, "test-secret", algorithms=["HS256"])
     assert payload["scope"] == "cashback_claim"
+
+
+def test_razorpayx_mock_defaults_true_when_key_empty() -> None:
+    settings = Settings(
+        razorpayx_mock=None,
+        razorpayx_key_id="",
+        _env_file=None,
+    )
+    assert settings.razorpayx_mock_enabled is True
+    assert_live_razorpayx_credentials(settings)  # mock path — no raise
+
+
+def test_razorpayx_mock_defaults_false_when_key_present() -> None:
+    settings = Settings(
+        razorpayx_mock=None,
+        razorpayx_key_id="rzp_test_abc",
+        razorpayx_key_secret="sec",
+        razorpayx_account_number="acc",
+        razorpayx_webhook_secret="whsec",
+        _env_file=None,
+    )
+    assert settings.razorpayx_mock_enabled is False
+    assert_live_razorpayx_credentials(settings)
+
+
+def test_razorpayx_mock_false_requires_keys() -> None:
+    settings = Settings(
+        razorpayx_mock="false",
+        razorpayx_key_id="",
+        razorpayx_key_secret="",
+        razorpayx_account_number="",
+        razorpayx_webhook_secret="",
+        _env_file=None,
+    )
+    assert settings.razorpayx_mock_enabled is False
+    with pytest.raises(ValueError, match="RAZORPAYX_MOCK=false"):
+        assert_live_razorpayx_credentials(settings)
+
+
+def test_razorpayx_mock_false_ok_with_full_credentials() -> None:
+    settings = Settings(
+        razorpayx_mock="false",
+        razorpayx_key_id="rzp_test_abc",
+        razorpayx_key_secret="sec",
+        razorpayx_account_number="2323230000000000",
+        razorpayx_webhook_secret="whsec",
+        _env_file=None,
+    )
+    assert settings.razorpayx_mock_enabled is False
+    assert_live_razorpayx_credentials(settings)
+
+
+def test_razorpayx_explicit_mock_true_even_with_keys() -> None:
+    settings = Settings(
+        razorpayx_mock="true",
+        razorpayx_key_id="rzp_test_abc",
+        _env_file=None,
+    )
+    assert settings.razorpayx_mock_enabled is True
+    assert_live_razorpayx_credentials(settings)

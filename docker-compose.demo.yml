@@ -102,6 +102,8 @@ services:
       OTP_PROVIDER: ${OTP_PROVIDER:-resend}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       OTP_FROM_EMAIL: ${OTP_FROM_EMAIL:-ReclaimAI Demo <onboarding@resend.dev>}
+      # Portfolio demo: RazorpayX test-mode API (real HTTP + webhooks, no live money)
+      RAZORPAYX_MOCK: "false"
     depends_on:
       postgres:
         condition: service_healthy

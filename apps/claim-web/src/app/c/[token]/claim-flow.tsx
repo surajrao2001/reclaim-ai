@@ -110,6 +110,9 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
         {context ? (
           <p className="muted">Cashback: ₹{context.cashback_amount_inr}</p>
         ) : null}
+        <p className="muted">
+          Test payout — no real money is transferred in this portfolio demo
+        </p>
       </div>
     );
   }
@@ -184,7 +187,10 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
 
       {step === 'upi' ? (
         <div className="form-block">
-          <label htmlFor="upi">UPI ID for cashback</label>
+          <label htmlFor="upi">UPI ID for test cashback</label>
+          <p className="muted">
+            Test payout — no real money is transferred in this portfolio demo
+          </p>
           <input
             id="upi"
             type="text"
@@ -199,7 +205,7 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
             onClick={handleCashback}
             disabled={!upiVpa.includes('@') || !claimJwt}
           >
-            Get ₹{context?.cashback_amount_inr ?? ''} cashback
+            Get ₹{context?.cashback_amount_inr ?? ''} test cashback
           </Button>
         </div>
       ) : null}

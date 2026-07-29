@@ -71,9 +71,40 @@ class Settings(BaseSettings):
 
     @property
     def razorpayx_mock_enabled(self) -> bool:
+        """Resolve mock flag.
+
+        Explicit RAZORPAYX_MOCK=true|false wins. If unset, mock when
+        RAZORPAYX_KEY_ID is empty (local/dev convenience).
+        """
         if self.razorpayx_mock is not None and self.razorpayx_mock != "":
             return self.razorpayx_mock.lower() == "true"
         return len(self.razorpayx_key_id) == 0
+
+
+def assert_live_razorpayx_credentials(cfg: Settings) -> None:
+    """Refuse to start live/test mode without RazorpayX credentials.
+
+    Portfolio demo sets RAZORPAYX_MOCK=false and uses RazorpayX *test* keys
+    (real HTTP + webhooks, no live money). Empty keys with mock forced off
+    must fail fast — never silently look live without a client.
+    """
+    if cfg.razorpayx_mock_enabled:
+        return
+    missing: list[str] = []
+    if not cfg.razorpayx_key_id:
+        missing.append("RAZORPAYX_KEY_ID")
+    if not cfg.razorpayx_key_secret:
+        missing.append("RAZORPAYX_KEY_SECRET")
+    if not cfg.razorpayx_account_number:
+        missing.append("RAZORPAYX_ACCOUNT_NUMBER")
+    if not cfg.razorpayx_webhook_secret:
+        missing.append("RAZORPAYX_WEBHOOK_SECRET")
+    if missing:
+        raise ValueError(
+            "RAZORPAYX_MOCK=false requires "
+            + ", ".join(missing)
+            + " (refusing to start without RazorpayX test credentials)"
+        )
 
 
 settings = Settings()
