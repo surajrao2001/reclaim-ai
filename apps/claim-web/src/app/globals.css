@@ -117,3 +117,239 @@ p {
   align-items: flex-start;
   gap: 0.75rem;
 }
+
+.flow-section {
+  margin-top: 2.75rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid rgba(247, 244, 235, 0.12);
+}
+
+.flow-heading {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--rai-fg);
+}
+
+.flow-lede {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+}
+
+.pipeline {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.15rem;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--rai-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.pipeline-step:not(:last-child)::after {
+  content: '';
+  display: inline-block;
+  width: 0.85rem;
+  height: 1px;
+  margin-left: 0.15rem;
+  background: rgba(247, 244, 235, 0.28);
+}
+
+.pipeline-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: rgba(247, 244, 235, 0.35);
+}
+
+.pipeline-step--done {
+  color: var(--rai-fg);
+}
+
+.pipeline-step--done .pipeline-dot {
+  background: var(--rai-accent);
+}
+
+.flow-diagram {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  color: var(--rai-muted);
+  margin-top: 0.25rem;
+}
+
+.demo-success {
+  margin-top: 1.5rem;
+}
+
+.demo-success-kicker {
+  margin: 0;
+  color: var(--rai-accent);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.demo-success-title {
+  margin: 0.4rem 0 1rem;
+  font-size: 1.35rem;
+  color: var(--rai-fg);
+}
+
+.demo-timeline {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.demo-timeline li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-left: 0.85rem;
+  border-left: 2px solid rgba(240, 180, 41, 0.45);
+}
+
+.demo-timeline strong {
+  color: var(--rai-fg);
+  font-size: 0.9rem;
+}
+
+.demo-timeline span {
+  color: var(--rai-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.demo-redirect-hint {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.status-link-wrap {
+  margin-top: 2rem;
+  font-size: 0.85rem;
+}
+
+.status-link {
+  color: var(--rai-accent);
+  text-decoration: none;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.status-link:hover {
+  text-decoration: underline;
+}
+
+.status-page {
+  max-width: 520px;
+}
+
+.status-overall {
+  margin: 1.25rem 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-weight: 600;
+  color: var(--rai-fg);
+}
+
+.status-overall--ok {
+  color: #86efac;
+}
+
+.status-overall--bad {
+  color: #fbbf24;
+}
+
+.status-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.status-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(247, 244, 235, 0.12);
+  border-radius: 8px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: rgba(247, 244, 235, 0.35);
+}
+
+.status-row--ok .status-dot {
+  background: #86efac;
+}
+
+.status-row--down .status-dot {
+  background: #f87171;
+}
+
+.status-row--loading .status-dot {
+  background: var(--rai-accent);
+  opacity: 0.6;
+}
+
+.status-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.status-meta strong {
+  color: var(--rai-fg);
+  font-size: 0.9rem;
+}
+
+.status-meta span {
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--rai-muted);
+}
+
+.status-code {
+  font-size: 0.8em;
+  color: var(--rai-fg);
+}
+
+.status-checked {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+}
+
+.turnstile-host {
+  min-height: 65px;
+}

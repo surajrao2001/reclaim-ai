@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@reclaimai/ui-components';
 import type { DashboardSummaryResponse, StaffMeResponse } from '@reclaimai/shared-types';
 import {
@@ -24,8 +24,32 @@ import {
 
 type View = 'loading' | 'login' | 'dashboard' | 'error';
 
+const SUMMARY_POLL_MS = 10_000;
+
 function pct(rate: number): string {
   return `${(rate * 100).toFixed(1)}%`;
+}
+
+function formatUpdatedAgo(updatedAt: number, now: number): string {
+  const sec = Math.max(0, Math.floor((now - updatedAt) / 1000));
+  if (sec < 5) return 'just now';
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  return `${Math.floor(min / 60)}h ago`;
+}
+
+/** Prefer cached Auth0 token (silent refresh only when near expiry); else stored bearer. */
+async function resolveAccessToken(): Promise<string | null> {
+  const mode = getStoredTokenMode();
+  if (mode === 'auth0' && isAuth0Configured()) {
+    const auth0Token = await getAuth0AccessToken();
+    if (auth0Token) {
+      storeToken(auth0Token, 'auth0');
+      return auth0Token;
+    }
+  }
+  return getStoredToken();
 }
 
 export function DashboardApp() {
@@ -34,13 +58,35 @@ export function DashboardApp() {
   const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const meRef = useRef<StaffMeResponse | null>(null);
+
+  useEffect(() => {
+    meRef.current = me;
+  }, [me]);
 
   async function loadWithToken(token: string) {
     const profile = await fetchMe(token);
     const stats = await fetchSummary(token, profile.tenant_id, 7);
     setMe(profile);
     setSummary(stats);
+    setLastUpdatedAt(Date.now());
     setView('dashboard');
+  }
+
+  async function refreshSummaryQuietly() {
+    const profile = meRef.current;
+    if (!profile) return;
+    try {
+      const token = await resolveAccessToken();
+      if (!token) return;
+      const stats = await fetchSummary(token, profile.tenant_id, 7);
+      setSummary(stats);
+      setLastUpdatedAt(Date.now());
+    } catch {
+      // Keep existing KPIs visible; next poll retries.
+    }
   }
 
   useEffect(() => {
@@ -82,6 +128,23 @@ export function DashboardApp() {
     };
   }, []);
 
+  useEffect(() => {
+    if (view !== 'dashboard' || !me) return;
+
+    const pollId = window.setInterval(() => {
+      void refreshSummaryQuietly();
+    }, SUMMARY_POLL_MS);
+
+    const tickId = window.setInterval(() => {
+      setNowTick(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(pollId);
+      window.clearInterval(tickId);
+    };
+  }, [view, me]);
+
   async function handleAuth0Login() {
     setError('');
     setBusy(true);
@@ -113,6 +176,7 @@ export function DashboardApp() {
     clearStoredToken();
     setMe(null);
     setSummary(null);
+    setLastUpdatedAt(null);
     if (mode === 'auth0' && isAuth0Configured()) {
       await logoutAuth0();
       return;
@@ -175,7 +239,7 @@ export function DashboardApp() {
       </header>
 
       {summary ? (
-        <section className="kpi-grid" aria-label="Last 7 days">
+        <section className="kpi-grid" aria-label="Last 7 days" aria-live="polite">
           <article className="kpi">
             <p className="kpi-label">Orders</p>
             <p className="kpi-value">{summary.orders_count}</p>
@@ -207,6 +271,12 @@ export function DashboardApp() {
         <p className="muted foot">
           Last {summary.window_days} days · Gross orders ₹
           {summary.gross_order_amount_inr.toFixed(0)}
+          {lastUpdatedAt != null ? (
+            <>
+              {' '}
+              · <span className="refresh-meta">Updated {formatUpdatedAgo(lastUpdatedAt, nowTick)}</span>
+            </>
+          ) : null}
         </p>
       ) : null}
     </div>

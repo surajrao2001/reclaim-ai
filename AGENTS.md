@@ -74,3 +74,8 @@ Workers must follow the active plan file and must not change shared contracts un
 - Nest apps do not expose Swagger.
 - Rate limits: Simulate Order, OTP request, cashback (claim + IP) via Redis; 429 uses the standard error envelope.
 - Optional Turnstile on Simulate Order (`TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` build arg).
+
+## Portfolio demo polish (M8)
+
+- Dashboard KPIs auto-refresh ~every 10s while signed in (stored / silent Auth0 token; “Updated … ago”).
+- Claim landing: post-simulate “what happens next” panel + pipeline diagram; public `/status` aggregates `/api/*/health` via Caddy.

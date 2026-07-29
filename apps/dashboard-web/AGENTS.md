@@ -40,3 +40,7 @@ Create a **Single Page Application** in Auth0:
 6. **Access token email (for first-login link):** add an Auth0 Post-Login Action that copies the user email onto the access token (custom claim `{audience}/email` or standard `email`). tenant-auth already reads both. Pre-seeding `staff_users.auth0_sub` to the Auth0 user `sub` skips this requirement.
 
 Shared demo user: create one Auth0 user (email should match `AUTH0_DEMO_USER_EMAIL`, default `owner@demo.reclaimai.local`). Set `tenancy.staff_users.auth0_sub` to that user's `sub`, or keep the seed `dev|demo-owner` placeholder and let the first login with matching email link/replace it.
+
+## Live KPI refresh (M8)
+
+While the owner is signed in on the KPI view, the dashboard polls `GET …/dashboard/summary` about every **10s**. It reuses the stored bearer token and Auth0 `getTokenSilently` (cached; refresh only when near expiry) — it does not re-run Universal Login. KPI numbers update in place with a subtle **Updated … ago** footnote; the layout does not remount.
