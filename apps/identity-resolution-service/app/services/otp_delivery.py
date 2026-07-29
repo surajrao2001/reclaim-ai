@@ -1,9 +1,10 @@
-"""OTP delivery providers (email via Resend, SMTP for local, WhatsApp stub for M4)."""
+"""OTP delivery providers (email via Resend, SMTP for local, WhatsApp via Meta)."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import re
 
 import aiosmtplib
 import httpx
@@ -30,7 +31,7 @@ class OtpDeliveryError(Exception):
 
 
 class OtpDeliveryProvider(ABC):
-    """Channel-agnostic OTP sender. WhatsApp OTP plugs in here in M4."""
+    """Channel-agnostic OTP sender."""
 
     @property
     @abstractmethod
@@ -54,6 +55,10 @@ def _mask_otp(otp: str) -> str:
 
 def _otp_email_body(otp: str) -> str:
     return f"Your ReclaimAI verification code is {otp}. Valid for 5 minutes."
+
+
+def _whatsapp_digits(phone_e164: str) -> str:
+    return re.sub(r"\D", "", phone_e164)
 
 
 class ConsoleOtpProvider(OtpDeliveryProvider):
@@ -225,19 +230,114 @@ class ResendEmailOtpProvider(OtpDeliveryProvider):
 
 
 class WhatsAppOtpProvider(OtpDeliveryProvider):
-    """Placeholder for M4 Meta WhatsApp OTP — not live in this milestone."""
+    """OTP via Meta WhatsApp Cloud API (identity → Graph HTTP; no dep on dispatch service).
 
-    def __init__(self, settings: Settings) -> None:
+    Prefer an approved authentication/utility template (`META_WA_OTP_TEMPLATE_NAME`)
+    with body `{{1}}` = OTP. Without a template name, sends a free-form text message
+    (only valid inside an open 24h session window).
+    """
+
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        http_client: httpx.AsyncClient | None = None,
+    ) -> None:
         self._settings = settings
+        self._http_client = http_client
 
     @property
     def channel(self) -> str:
         return "whatsapp"
 
+    def _ensure_configured(self) -> None:
+        if not self._settings.meta_wa_token or not self._settings.meta_wa_phone_number_id:
+            raise OtpDeliveryError(
+                "WhatsApp OTP requires META_WA_TOKEN and META_WA_PHONE_NUMBER_ID",
+                retryable=False,
+            )
+
+    def _build_payload(self, phone_e164: str, otp: str) -> dict[str, object]:
+        to = _whatsapp_digits(phone_e164)
+        template_name = (self._settings.meta_wa_otp_template_name or "").strip()
+        if template_name:
+            return {
+                "messaging_product": "whatsapp",
+                "to": to,
+                "type": "template",
+                "template": {
+                    "name": template_name,
+                    "language": {"code": self._settings.meta_wa_otp_template_lang or "en"},
+                    "components": [
+                        {
+                            "type": "body",
+                            "parameters": [{"type": "text", "text": otp}],
+                        }
+                    ],
+                },
+            }
+        return {
+            "messaging_product": "whatsapp",
+            "to": to,
+            "type": "text",
+            "text": {
+                "preview_url": False,
+                "body": f"Your ReclaimAI verification code is {otp}. Valid for 5 minutes.",
+            },
+        }
+
     async def send_otp(self, destination: OtpDestination, otp: str) -> None:
-        raise OtpDeliveryError(
-            "WhatsApp OTP provider is not enabled yet (planned for M4)",
-            retryable=False,
+        try:
+            self._ensure_configured()
+        except OtpDeliveryError:
+            if not _is_strict_environment(self._settings):
+                logger.warning(
+                    "whatsapp_otp_misconfigured_soft_fail",
+                    phone_suffix=destination.phone_e164[-4:],
+                )
+                return
+            raise
+
+        version = self._settings.meta_wa_api_version or "v21.0"
+        phone_id = self._settings.meta_wa_phone_number_id
+        url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {self._settings.meta_wa_token}",
+            "Content-Type": "application/json",
+        }
+        payload = self._build_payload(destination.phone_e164, otp)
+
+        try:
+            if self._http_client is not None:
+                response = await self._http_client.post(url, json=payload, headers=headers)
+            else:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    response = await client.post(url, json=payload, headers=headers)
+        except httpx.HTTPError as exc:
+            logger.warning("whatsapp_otp_send_failed", error=str(exc))
+            if _is_strict_environment(self._settings):
+                raise OtpDeliveryError("WhatsApp OTP delivery failed", retryable=True) from exc
+            return
+
+        if response.status_code >= 400:
+            logger.warning(
+                "whatsapp_otp_rejected",
+                status_code=response.status_code,
+                body=response.text[:200],
+            )
+            if _is_strict_environment(self._settings):
+                raise OtpDeliveryError(
+                    "WhatsApp OTP delivery rejected",
+                    retryable=response.status_code >= 500,
+                )
+            return
+
+        logger.info(
+            "otp_dispatched",
+            channel=self.channel,
+            phone_suffix=destination.phone_e164[-4:],
+            otp_masked=_mask_otp(otp),
+            mode="template" if self._settings.meta_wa_otp_template_name else "text",
         )
 
 

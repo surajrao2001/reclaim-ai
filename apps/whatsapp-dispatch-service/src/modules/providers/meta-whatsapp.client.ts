@@ -75,6 +75,19 @@ export class MetaWhatsAppClient {
     };
   }
 
+  /**
+   * Builds a marketing/utility template payload.
+   *
+   * Approved Meta template body variables must match this order:
+   *   {{1}} = offer message body (always)
+   *   {{2}} = selected discount value INR (when present on the event)
+   *   {{3}} = CTA URL (when present on the event)
+   *
+   * Example template body:
+   *   "{{1}} Save ₹{{2}}. Claim: {{3}}"
+   * Or a single-var template "{{1}}" if your pipeline never sets discount/cta
+   * (prefer a 2–3 var template for the hosted demo offer flow).
+   */
   private buildTemplateBody(
     to: string,
     input: SendMessageInput,
@@ -96,7 +109,7 @@ export class MetaWhatsAppClient {
       });
     }
     if (input.ctaUrl) {
-      parameters.push({ type: 'text', text: input.ctaUrl });
+      parameters.push({ type: 'text', text: input.ctaUrl.slice(0, 1024) });
     }
 
     return {

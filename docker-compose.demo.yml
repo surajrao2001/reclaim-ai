@@ -197,6 +197,9 @@ services:
       PORT: 3003
       KAFKA_CLIENT_ID: whatsapp-dispatch-service
       KAFKA_GROUP_ID: whatsapp-dispatch-service
+      # Portfolio demo: real Meta Cloud API only (no in-process mock; Gupshup not required)
+      WHATSAPP_MOCK: "false"
+      WHATSAPP_SEND_MODE: template
     depends_on:
       postgres:
         condition: service_healthy

@@ -24,6 +24,57 @@ export interface AppConfig {
   providerTimeoutMs: number;
 }
 
+/**
+ * Resolve mock flag:
+ * - Explicit WHATSAPP_MOCK=true|false wins.
+ * - If unset, mock when META_WA_TOKEN is empty (local/dev convenience).
+ * Live mode (mock=false) refuses empty Meta credentials so demo never
+ * silently looks live without a token.
+ */
+export function resolveWhatsAppMock(
+  mockEnv: string | undefined,
+  metaWaToken: string,
+): boolean {
+  if (mockEnv !== undefined && mockEnv !== '') {
+    return mockEnv === 'true';
+  }
+  return metaWaToken.length === 0;
+}
+
+export function assertLiveMetaCredentials(input: {
+  whatsappMock: boolean;
+  metaWaToken: string;
+  metaWaPhoneNumberId: string;
+  whatsappSendMode: WhatsAppSendMode;
+  metaWaTemplateName: string;
+}): void {
+  if (input.whatsappMock) {
+    return;
+  }
+  if (!input.metaWaToken || !input.metaWaPhoneNumberId) {
+    throw new Error(
+      'WHATSAPP_MOCK=false requires META_WA_TOKEN and META_WA_PHONE_NUMBER_ID ' +
+        '(refusing to start without live Meta credentials)',
+    );
+  }
+  if (input.whatsappSendMode === 'template' && !input.metaWaTemplateName) {
+    throw new Error(
+      'WHATSAPP_SEND_MODE=template requires META_WA_TEMPLATE_NAME when live',
+    );
+  }
+}
+
+export function isGupshupConfigured(config: Pick<
+  AppConfig,
+  'gupshupApiKey' | 'gupshupAppName' | 'gupshupSourceNumber'
+>): boolean {
+  return Boolean(
+    config.gupshupApiKey &&
+      config.gupshupAppName &&
+      config.gupshupSourceNumber,
+  );
+}
+
 export function loadConfig(): AppConfig {
   const databaseUrl = (
     process.env.DATABASE_URL ??
@@ -31,15 +82,25 @@ export function loadConfig(): AppConfig {
   ).replace('postgresql+psycopg://', 'postgresql://');
 
   const metaWaToken = process.env.META_WA_TOKEN ?? '';
-  const mockEnv = process.env.WHATSAPP_MOCK;
-  const whatsappMock =
-    mockEnv !== undefined && mockEnv !== ''
-      ? mockEnv === 'true'
-      : metaWaToken.length === 0;
+  const metaWaPhoneNumberId = process.env.META_WA_PHONE_NUMBER_ID ?? '';
+  const metaWaTemplateName = process.env.META_WA_TEMPLATE_NAME ?? '';
 
   const sendModeRaw = (process.env.WHATSAPP_SEND_MODE ?? 'text').toLowerCase();
   const whatsappSendMode: WhatsAppSendMode =
     sendModeRaw === 'template' ? 'template' : 'text';
+
+  const whatsappMock = resolveWhatsAppMock(
+    process.env.WHATSAPP_MOCK,
+    metaWaToken,
+  );
+
+  assertLiveMetaCredentials({
+    whatsappMock,
+    metaWaToken,
+    metaWaPhoneNumberId,
+    whatsappSendMode,
+    metaWaTemplateName,
+  });
 
   return {
     port: Number(process.env.PORT ?? 3003),
@@ -52,9 +113,9 @@ export function loadConfig(): AppConfig {
     whatsappMock,
     whatsappSendMode,
     metaWaToken,
-    metaWaPhoneNumberId: process.env.META_WA_PHONE_NUMBER_ID ?? '',
+    metaWaPhoneNumberId,
     metaWaVerifyToken: process.env.META_WA_VERIFY_TOKEN ?? 'dev_meta_wa_verify_token',
-    metaWaTemplateName: process.env.META_WA_TEMPLATE_NAME ?? '',
+    metaWaTemplateName,
     metaWaTemplateLang: process.env.META_WA_TEMPLATE_LANG ?? 'en',
     metaWaApiVersion: process.env.META_WA_API_VERSION ?? 'v21.0',
     gupshupApiKey: process.env.GUPSHUP_API_KEY ?? '',
