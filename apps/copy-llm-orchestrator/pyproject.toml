@@ -1,7 +1,7 @@
 [project]
 name = "copy-llm-orchestrator"
 version = "0.1.0"
-description = "Template-first Hinglish copy / optional Claude orchestrator"
+description = "Claude-primary Hinglish copy with template fallback / daily token budget"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115.6",
