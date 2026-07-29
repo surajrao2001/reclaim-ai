@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     otp_rate_limit_max: int = 3
     otp_rate_limit_window_seconds: int = 600
 
+    cashback_rate_limit_max_per_claim: int = 5
+    cashback_rate_limit_max_per_ip: int = 10
+    cashback_rate_limit_window_seconds: int = 600
+
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     smtp_from: str = "otp@reclaimai.local"
@@ -53,6 +57,7 @@ class Settings(BaseSettings):
 
     default_cashback_amount_inr: int = 100
     cors_origins: str = "http://localhost:3101"
+    demo_hardened: bool = False
 
     razorpayx_key_id: str = ""
     razorpayx_key_secret: str = ""
@@ -68,6 +73,13 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def expose_openapi_docs(self) -> bool:
+        """OpenAPI UI/schema off in production or when DEMO_HARDENED=true."""
+        if self.demo_hardened:
+            return False
+        return self.environment.lower() != "production"
 
     @property
     def razorpayx_mock_enabled(self) -> bool:

@@ -28,8 +28,15 @@ class CashbackService:
         self._razorpayx = razorpayx
         self._settings = settings
 
-    async def initiate_payout(self, *, claim_jwt: str, upi_vpa_raw: str) -> dict:
+    async def initiate_payout(
+        self,
+        *,
+        claim_jwt: str,
+        upi_vpa_raw: str,
+        client_ip: str = "unknown",
+    ) -> dict:
         claims = verify_claim_jwt(secret=self._settings.claim_jwt_secret, token=claim_jwt)
+        await self._consume_rate_limits(claim_id=claims.claim_id, client_ip=client_ip)
 
         try:
             upi_vpa = normalize_upi_vpa(upi_vpa_raw)
@@ -169,6 +176,33 @@ class CashbackService:
             claim_id=str(claim.claim_id),
             status=mapped,
         )
+
+    async def _consume_rate_limits(self, *, claim_id: UUID, client_ip: str) -> None:
+        window = self._settings.cashback_rate_limit_window_seconds
+        claim_key = f"cashback:ratelimit:claim:{claim_id}"
+        claim_count = await self._redis.incr(claim_key)
+        if claim_count == 1:
+            await self._redis.expire(claim_key, window)
+        if claim_count > self._settings.cashback_rate_limit_max_per_claim:
+            raise api_error(
+                429,
+                "CASHBACK_RATE_LIMITED",
+                "Too many cashback attempts for this claim. Try again later.",
+                retryable=True,
+            )
+
+        ip = client_ip.strip() or "unknown"
+        ip_key = f"cashback:ratelimit:ip:{ip}"
+        ip_count = await self._redis.incr(ip_key)
+        if ip_count == 1:
+            await self._redis.expire(ip_key, window)
+        if ip_count > self._settings.cashback_rate_limit_max_per_ip:
+            raise api_error(
+                429,
+                "CASHBACK_RATE_LIMITED",
+                "Too many cashback attempts from this network. Try again later.",
+                retryable=True,
+            )
 
 
 def _map_provider_status(status: str) -> str | None:

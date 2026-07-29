@@ -1,3 +1,12 @@
+# Demo reverse proxy — plain HTTP on :80.
+#
+# Preferred public edge: Cloudflare Tunnel → host DEMO_HTTP_PORT (default 8088)
+# which maps to this container :80. TLS terminates at Cloudflare; keep auto_https
+# off here so Caddy does not fight the tunnel.
+#
+# Alternative: terminate TLS on Caddy itself (open 80/443, enable auto_https, and
+# use a hostname site block). See infra/demo/README.md.
+
 {
 	auto_https off
 	admin off

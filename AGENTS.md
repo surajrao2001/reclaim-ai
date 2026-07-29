@@ -65,3 +65,12 @@ Workers must follow the active plan file and must not change shared contracts un
 - Shared demo Auth0 user email should match `AUTH0_DEMO_USER_EMAIL` (default `owner@demo.reclaimai.local` on Demo Kitchen).
 - Map `tenancy.staff_users.auth0_sub` to that Auth0 user's `sub`, or leave the seed `dev|demo-owner` placeholder and let first login link by email.
 - Auth0 app callback / logout / web origins: see `apps/dashboard-web/AGENTS.md`.
+
+## Portfolio demo hardening (M7)
+
+- HTTPS edge: prefer Cloudflare Tunnel → Caddy `:80` — see `infra/demo/README.md`.
+- Env template: `.env.demo.example` (`PUBLIC_BASE_URL=https://…`, locked `CORS_ORIGINS`, no `*`).
+- FastAPI OpenAPI/`/docs` off when `ENVIRONMENT=production` or `DEMO_HARDENED=true`.
+- Nest apps do not expose Swagger.
+- Rate limits: Simulate Order, OTP request, cashback (claim + IP) via Redis; 429 uses the standard error envelope.
+- Optional Turnstile on Simulate Order (`TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` build arg).

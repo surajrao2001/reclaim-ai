@@ -5,6 +5,7 @@ import {
   newDemoOrderId,
 } from '../src/modules/demo/demo.types';
 import { DemoService } from '../src/modules/demo/demo.service';
+import { TurnstileService } from '../src/modules/demo/turnstile.service';
 import type { AppConfig } from '../src/config/configuration';
 import type { ReclaimPrintPayload } from '../src/modules/petpooja-webhook/petpooja-webhook.types';
 import { signHmacSha256Hex, verifyHmacSha256Hex } from '../src/common/hmac';
@@ -31,6 +32,65 @@ describe('demo helpers', () => {
   });
 });
 
+describe('TurnstileService', () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('skips verification when secret is unset', async () => {
+    const service = new TurnstileService('');
+    await expect(service.verifyOrThrow(undefined, '1.1.1.1')).resolves.toBeUndefined();
+    expect(service.enabled).toBe(false);
+  });
+
+  it('rejects missing token when secret is set', async () => {
+    const service = new TurnstileService('test-secret');
+    await expect(service.verifyOrThrow(undefined, '1.1.1.1')).rejects.toBeInstanceOf(
+      HttpException,
+    );
+    try {
+      await service.verifyOrThrow('', '1.1.1.1');
+    } catch (err) {
+      const ex = err as HttpException;
+      expect(ex.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+      const body = ex.getResponse() as { error: { code: string } };
+      expect(body.error.code).toBe('TURNSTILE_REQUIRED');
+    }
+  });
+
+  it('accepts a valid siteverify response', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: async () => ({ success: true }),
+    }) as unknown as typeof fetch;
+
+    const service = new TurnstileService('test-secret');
+    await expect(service.verifyOrThrow('tok', '203.0.113.1')).resolves.toBeUndefined();
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('rejects failed siteverify', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: async () => ({ success: false, 'error-codes': ['invalid-input-response'] }),
+    }) as unknown as typeof fetch;
+
+    const service = new TurnstileService('test-secret');
+    try {
+      await service.verifyOrThrow('bad', '203.0.113.1');
+      fail('expected throw');
+    } catch (err) {
+      const ex = err as HttpException;
+      expect(ex.getStatus()).toBe(HttpStatus.FORBIDDEN);
+      const body = ex.getResponse() as { error: { code: string } };
+      expect(body.error.code).toBe('TURNSTILE_FAILED');
+    }
+  });
+});
+
 describe('DemoService', () => {
   const secret = 'unit-demo-secret';
   const config = {
@@ -38,6 +98,7 @@ describe('DemoService', () => {
     showcasePetpoojaRestId: 'pp_out_88219',
     demoSimulateRateLimitMax: 5,
     demoSimulateRateLimitWindowSeconds: 600,
+    turnstileSecretKey: '',
   } as AppConfig;
 
   const printPayload: ReclaimPrintPayload = {
@@ -51,6 +112,14 @@ describe('DemoService', () => {
     },
   };
 
+  const turnstile = {
+    verifyOrThrow: jest.fn().mockResolvedValue(undefined),
+  };
+
+  beforeEach(() => {
+    turnstile.verifyOrThrow.mockClear();
+  });
+
   it('signs and invokes the existing webhook service', async () => {
     const redis = {
       consumeDemoSimulateRateLimit: jest.fn().mockResolvedValue({ count: 1, allowed: true }),
@@ -63,10 +132,12 @@ describe('DemoService', () => {
       config,
       redis as never,
       webhookService as never,
+      turnstile as never,
     );
 
-    const result = await service.simulateOrder('203.0.113.10');
+    const result = await service.simulateOrder('203.0.113.10', 'cf-token');
 
+    expect(turnstile.verifyOrThrow).toHaveBeenCalledWith('cf-token', '203.0.113.10');
     expect(redis.consumeDemoSimulateRateLimit).toHaveBeenCalledWith('203.0.113.10', 5, 600);
     expect(webhookService.handleOrderCreated).toHaveBeenCalledTimes(1);
 
@@ -96,6 +167,7 @@ describe('DemoService', () => {
       config,
       redis as never,
       webhookService as never,
+      turnstile as never,
     );
 
     await expect(service.simulateOrder('203.0.113.11')).rejects.toBeInstanceOf(HttpException);

@@ -103,6 +103,8 @@ async def test_cashback_mock_payout_success() -> None:
     redis = MagicMock()
     redis.set = AsyncMock(return_value=True)
     redis.delete = AsyncMock()
+    redis.incr = AsyncMock(return_value=1)
+    redis.expire = AsyncMock()
 
     settings = Settings(
         claim_jwt_secret="test-secret",
@@ -116,6 +118,7 @@ async def test_cashback_mock_payout_success() -> None:
     assert result["upi_txn_ref"].startswith("mock_pout_") or result["upi_txn_ref"] == "mock_pout_abc"
     db.mark_payout_pending.assert_awaited()
     db.mark_payout_processing.assert_awaited()
+    assert redis.incr.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -143,6 +146,8 @@ async def test_cashback_idempotent_when_already_paid() -> None:
     db = MagicMock()
     db.get_claim_payout = AsyncMock(return_value=claim_row)
     redis = MagicMock()
+    redis.incr = AsyncMock(return_value=1)
+    redis.expire = AsyncMock()
     settings = Settings(claim_jwt_secret="test-secret", razorpayx_mock="true")
     service = CashbackService(db, redis, RazorpayXClient(settings), settings)
 
@@ -150,6 +155,86 @@ async def test_cashback_idempotent_when_already_paid() -> None:
     assert result["upi_txn_ref"] == "pout_existing"
     assert result["payout_status"] == "paid"
     redis.set.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_cashback_rate_limited_per_claim() -> None:
+    from fastapi import HTTPException
+
+    claim_id = uuid4()
+    customer_id = uuid4()
+    order_id = uuid4()
+    token = sign_claim_jwt(
+        secret="test-secret",
+        customer_id=customer_id,
+        claim_id=claim_id,
+        aggregator_order_id=order_id,
+        ttl_seconds=300,
+    )
+    db = MagicMock()
+    redis = MagicMock()
+    redis.incr = AsyncMock(return_value=6)
+    redis.expire = AsyncMock()
+    settings = Settings(
+        claim_jwt_secret="test-secret",
+        razorpayx_mock="true",
+        cashback_rate_limit_max_per_claim=5,
+        cashback_rate_limit_max_per_ip=10,
+        _env_file=None,
+    )
+    service = CashbackService(db, redis, RazorpayXClient(settings), settings)
+
+    with pytest.raises(HTTPException) as exc:
+        await service.initiate_payout(
+            claim_jwt=token,
+            upi_vpa_raw="name@upi",
+            client_ip="203.0.113.50",
+        )
+    assert exc.value.status_code == 429
+    detail = exc.value.detail
+    assert isinstance(detail, dict)
+    assert detail["error"]["code"] == "CASHBACK_RATE_LIMITED"
+    assert detail["error"]["retryable"] is True
+    db.get_claim_payout.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_cashback_rate_limited_per_ip() -> None:
+    from fastapi import HTTPException
+
+    claim_id = uuid4()
+    customer_id = uuid4()
+    order_id = uuid4()
+    token = sign_claim_jwt(
+        secret="test-secret",
+        customer_id=customer_id,
+        claim_id=claim_id,
+        aggregator_order_id=order_id,
+        ttl_seconds=300,
+    )
+    db = MagicMock()
+    redis = MagicMock()
+    # claim count OK, IP count over limit
+    redis.incr = AsyncMock(side_effect=[1, 11])
+    redis.expire = AsyncMock()
+    settings = Settings(
+        claim_jwt_secret="test-secret",
+        razorpayx_mock="true",
+        cashback_rate_limit_max_per_claim=5,
+        cashback_rate_limit_max_per_ip=10,
+        _env_file=None,
+    )
+    service = CashbackService(db, redis, RazorpayXClient(settings), settings)
+
+    with pytest.raises(HTTPException) as exc:
+        await service.initiate_payout(
+            claim_jwt=token,
+            upi_vpa_raw="name@upi",
+            client_ip="203.0.113.50",
+        )
+    assert exc.value.status_code == 429
+    assert exc.value.detail["error"]["code"] == "CASHBACK_RATE_LIMITED"
+    db.get_claim_payout.assert_not_called()
 
 
 @pytest.mark.asyncio

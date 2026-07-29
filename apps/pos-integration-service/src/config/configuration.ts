@@ -11,6 +11,7 @@ export interface AppConfig {
   showcasePetpoojaRestId: string;
   demoSimulateRateLimitMax: number;
   demoSimulateRateLimitWindowSeconds: number;
+  turnstileSecretKey: string;
   corsOrigins: string[];
 }
 
@@ -41,6 +42,7 @@ export function loadConfig(): AppConfig {
     demoSimulateRateLimitWindowSeconds: Number(
       process.env.DEMO_SIMULATE_RATE_LIMIT_WINDOW_SECONDS ?? 600,
     ),
+    turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY ?? '',
     corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3101')
       .split(',')
       .map((o) => o.trim())

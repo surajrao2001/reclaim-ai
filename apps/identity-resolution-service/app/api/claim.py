@@ -44,6 +44,15 @@ async def verify_otp(body: ClaimOtpVerifyBody, request: Request) -> dict:
     )
 
 
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip() or "unknown"
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
 @router.post("/cashback")
 async def claim_cashback(
     body: ClaimCashbackBody,
@@ -56,7 +65,11 @@ async def claim_cashback(
     if not token:
         raise api_error(401, "CLAIM_JWT_INVALID", "Bearer claim JWT required")
     service = get_cashback_service(request)
-    return await service.initiate_payout(claim_jwt=token, upi_vpa_raw=body.upi_vpa)
+    return await service.initiate_payout(
+        claim_jwt=token,
+        upi_vpa_raw=body.upi_vpa,
+        client_ip=_client_ip(request),
+    )
 
 
 @webhook_router.post("/payout")

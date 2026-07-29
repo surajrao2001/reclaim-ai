@@ -9,6 +9,7 @@ import {
   newDemoOrderId,
   type SimulateOrderResponse,
 } from './demo.types';
+import { TurnstileService } from './turnstile.service';
 
 @Injectable()
 export class DemoService {
@@ -16,9 +17,15 @@ export class DemoService {
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly redis: RedisService,
     private readonly webhookService: PetpoojaWebhookService,
+    private readonly turnstile: TurnstileService,
   ) {}
 
-  async simulateOrder(clientIp: string): Promise<SimulateOrderResponse> {
+  async simulateOrder(
+    clientIp: string,
+    turnstileToken?: string,
+  ): Promise<SimulateOrderResponse> {
+    await this.turnstile.verifyOrThrow(turnstileToken, clientIp);
+
     const rate = await this.redis.consumeDemoSimulateRateLimit(
       clientIp,
       this.config.demoSimulateRateLimitMax,

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     service_name: str = "margin-offer-engine"
     environment: str = "development"
+    demo_hardened: bool = False
     port: int = 8002
     database_url: str = "postgresql://reclaimai:reclaimai_dev@localhost:5433/reclaimai"
     redis_url: str = "redis://localhost:6379/0"
@@ -34,6 +35,12 @@ class Settings(BaseSettings):
     @property
     def asyncpg_dsn(self) -> str:
         return self.database_url.replace("postgresql+psycopg://", "postgresql://")
+
+    @property
+    def expose_openapi_docs(self) -> bool:
+        if self.demo_hardened:
+            return False
+        return self.environment.lower() != "production"
 
 
 settings = Settings()

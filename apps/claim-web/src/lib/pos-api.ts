@@ -9,10 +9,18 @@ export interface SimulateOrderResponse {
 const POS_API =
   process.env.NEXT_PUBLIC_POS_API_URL ?? 'http://localhost:3002';
 
-export async function simulateOrder(): Promise<SimulateOrderResponse> {
+export async function simulateOrder(
+  turnstileToken?: string,
+): Promise<SimulateOrderResponse> {
   const response = await fetch(`${POS_API}/v1/demo/simulate-order`, {
     method: 'POST',
-    headers: { Accept: 'application/json' },
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(
+      turnstileToken ? { turnstile_token: turnstileToken } : {},
+    ),
   });
 
   if (!response.ok) {
