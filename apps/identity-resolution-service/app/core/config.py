@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     smtp_port: int = 1025
     smtp_from: str = "otp@reclaimai.local"
 
+    # OTP delivery: smtp (local Mailhog) | email|resend (Resend) | console (tests) | whatsapp (M4)
+    otp_provider: str = "smtp"
+    resend_api_key: str = ""
+    otp_from_email: str = "ReclaimAI <otp@reclaimai.local>"
+
     default_cashback_amount_inr: int = 100
     cors_origins: str = "http://localhost:3101"
 

@@ -116,10 +116,12 @@ export interface ClaimContextResponse {
 export interface ClaimOtpRequest {
   claim_token: string;
   phone_e164: string;
+  email: string;
 }
 
 export interface ClaimOtpRequestResponse {
   expires_in_seconds: number;
+  delivery_channel?: string;
 }
 
 export interface ClaimOtpVerifyRequest {

@@ -21,6 +21,7 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
   const [step, setStep] = useState<Step>('loading');
   const [context, setContext] = useState<ClaimContextResponse | null>(null);
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [phoneE164, setPhoneE164] = useState('');
   const [otp, setOtp] = useState('');
   const [consent, setConsent] = useState(false);
@@ -54,7 +55,7 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
     try {
       const e164 = toIndianE164(phone);
       setPhoneE164(e164);
-      await requestClaimOtp(token, e164);
+      await requestClaimOtp(token, e164, email.trim());
       setStep('otp');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send OTP');
@@ -89,6 +90,9 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
       setError(err instanceof Error ? err.message : 'Cashback failed');
     }
   }
+
+  const emailLooksValid = email.includes('@') && email.includes('.');
+  const canSendOtp = Boolean(phone && emailLooksValid && consent);
 
   if (step === 'loading') {
     return <p className="muted">Loading your bill…</p>;
@@ -135,6 +139,16 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
+          <label htmlFor="email">Email for OTP</label>
+          <input
+            id="email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
           <label className="checkbox">
             <input
               type="checkbox"
@@ -143,7 +157,7 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
             />
             I agree to receive WhatsApp updates from this restaurant (DPDP consent)
           </label>
-          <Button type="button" onClick={handleRequestOtp} disabled={!phone || !consent}>
+          <Button type="button" onClick={handleRequestOtp} disabled={!canSendOtp}>
             Send OTP
           </Button>
         </div>
@@ -151,7 +165,8 @@ export function ClaimFlow({ token }: ClaimFlowProps) {
 
       {step === 'otp' ? (
         <div className="form-block">
-          <label htmlFor="otp">Enter OTP sent to {phoneE164}</label>
+          <label htmlFor="otp">Enter OTP sent to {email.trim()}</label>
+          <p className="muted">We emailed your verification code. Phone stays for identity and WhatsApp offers.</p>
           <input
             id="otp"
             type="text"

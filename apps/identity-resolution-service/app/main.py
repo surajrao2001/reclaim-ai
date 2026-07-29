@@ -18,8 +18,8 @@ from app.services.claim_service import ClaimService
 from app.services.database import Database
 from app.services.kafka_producer import KafkaProducer
 from app.services.otp import OtpService
+from app.services.otp_delivery import create_otp_delivery_provider
 from app.services.razorpayx import RazorpayXClient
-from app.services.sms import SmsService
 
 configure_logging()
 
@@ -41,14 +41,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         rate_limit_max=settings.otp_rate_limit_max,
         rate_limit_window_seconds=settings.otp_rate_limit_window_seconds,
     )
-    sms = SmsService(
-        host=settings.smtp_host,
-        port=settings.smtp_port,
-        sender=settings.smtp_from,
-    )
+    otp_delivery = create_otp_delivery_provider(settings)
     kafka = KafkaProducer(kafka_raw)
     razorpayx = RazorpayXClient(settings)
-    claim_service = ClaimService(db, otp, sms, kafka, settings)
+    claim_service = ClaimService(db, otp, otp_delivery, kafka, settings)
     cashback_service = CashbackService(db, redis, razorpayx, settings)
 
     app.state.settings = settings

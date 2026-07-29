@@ -28,11 +28,16 @@ export async function fetchClaimContext(token: string): Promise<ClaimContextResp
 export async function requestClaimOtp(
   claimToken: string,
   phoneE164: string,
+  email: string,
 ): Promise<ClaimOtpRequestResponse> {
   const response = await fetch(`${IDENTITY_API}/v1/claim/otp/request`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ claim_token: claimToken, phone_e164: phoneE164 }),
+    body: JSON.stringify({
+      claim_token: claimToken,
+      phone_e164: phoneE164,
+      email,
+    }),
   });
   return parseResponse<ClaimOtpRequestResponse>(response);
 }
