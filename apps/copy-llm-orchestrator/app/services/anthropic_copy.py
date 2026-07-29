@@ -1,4 +1,4 @@
-"""Optional Claude copy generation. Template path is primary; this is best-effort."""
+"""Claude copy generation. Primary when ANTHROPIC_API_KEY is set; template is fallback."""
 
 from decimal import Decimal
 
@@ -13,14 +13,32 @@ CLAUDE_MODEL = "claude-sonnet-4-20250514"
 PROMPT_VERSION = "claude.v1"
 
 
+def estimate_tokens_from_text(text: str) -> int:
+    """Rough char/4 estimate when API usage is missing."""
+    return max(1, (len(text) + 3) // 4)
+
+
+def tokens_from_usage(usage: dict | None, *, prompt: str, response_text: str) -> int:
+    """Prefer Anthropic usage totals; fall back to char estimate."""
+    if isinstance(usage, dict):
+        input_tokens = usage.get("input_tokens")
+        output_tokens = usage.get("output_tokens")
+        if isinstance(input_tokens, int) and isinstance(output_tokens, int):
+            return max(0, input_tokens) + max(0, output_tokens)
+        total = usage.get("total_tokens")
+        if isinstance(total, int):
+            return max(0, total)
+    return estimate_tokens_from_text(prompt) + estimate_tokens_from_text(response_text)
+
+
 async def generate_claude_copy(
     *,
     api_key: str,
     favorite_dish_name: str,
     max_discount_rupees: Decimal | float | int | str,
     cta_url: str,
-) -> tuple[str, str] | None:
-    """Return (message_body, prompt_version) or None on missing key / failure."""
+) -> tuple[str, str, int] | None:
+    """Return (message_body, prompt_version, tokens_used) or None on missing key / failure."""
     if not api_key:
         return None
 
@@ -54,7 +72,12 @@ async def generate_claude_copy(
             ).strip()
             if not text:
                 return None
-            return text, PROMPT_VERSION
+            tokens = tokens_from_usage(
+                data.get("usage") if isinstance(data, dict) else None,
+                prompt=prompt,
+                response_text=text,
+            )
+            return text, PROMPT_VERSION, tokens
     except Exception as exc:
         logger.warning("anthropic_copy_failed", error=str(exc))
-        return None
+    return None

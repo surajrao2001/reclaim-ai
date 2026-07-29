@@ -168,6 +168,8 @@ services:
       CLAIM_WEB_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8088}
       KAFKA_CLIENT_ID: copy-llm-orchestrator
       KAFKA_CONSUMER_GROUP: copy-llm-orchestrator
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_DAILY_TOKEN_BUDGET: ${ANTHROPIC_DAILY_TOKEN_BUDGET:-100000}
     depends_on:
       postgres:
         condition: service_healthy

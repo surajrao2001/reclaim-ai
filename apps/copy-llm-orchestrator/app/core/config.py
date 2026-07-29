@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     kafka_enabled: bool = True
     claim_web_base_url: str = "http://localhost:3101"
     anthropic_api_key: str | None = None
+    # Soft daily cap for portfolio demo abuse; Claude skipped when exceeded.
+    anthropic_daily_token_budget: int = 100_000
 
     @property
     def asyncpg_dsn(self) -> str:

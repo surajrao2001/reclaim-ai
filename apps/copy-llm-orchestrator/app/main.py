@@ -13,6 +13,7 @@ from app.core.logging import configure_logging
 from app.services.database import Database
 from app.services.kafka_consumer import OfferReadyConsumer
 from app.services.kafka_producer import KafkaProducer
+from app.services.redis_daily_budget import RedisDailyBudget
 from app.services.redis_idempotency import RedisIdempotency
 from app.workers.copy_pipeline import CopyPipeline
 
@@ -32,7 +33,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     db = Database(pool)
     kafka = KafkaProducer(kafka_raw)
     idempotency = RedisIdempotency(redis)
-    pipeline = CopyPipeline(db, kafka, idempotency, settings)
+    daily_budget = RedisDailyBudget(
+        redis,
+        daily_token_budget=settings.anthropic_daily_token_budget,
+    )
+    pipeline = CopyPipeline(db, kafka, idempotency, settings, daily_budget=daily_budget)
 
     consumer: OfferReadyConsumer | None = None
     if settings.kafka_enabled:
