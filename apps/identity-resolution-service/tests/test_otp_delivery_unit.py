@@ -70,14 +70,69 @@ def test_provider_selection_auto_by_environment() -> None:
 
 
 @pytest.mark.asyncio
-async def test_whatsapp_stub_not_implemented() -> None:
-    provider = WhatsAppOtpProvider(_settings())
+async def test_whatsapp_misconfigured_strict_raises() -> None:
+    provider = WhatsAppOtpProvider(
+        _settings(
+            environment="production",
+            meta_wa_token="",
+            meta_wa_phone_number_id="",
+            meta_wa_otp_template_name="",
+        )
+    )
     with pytest.raises(OtpDeliveryError) as exc:
         await provider.send_otp(
             OtpDestination(phone_e164="+919900000000", email="a@b.com"),
             "123456",
         )
-    assert "M4" in str(exc.value)
+    assert "META_WA_TOKEN" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_whatsapp_template_otp_posts_to_meta() -> None:
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        status_code = 200
+        text = '{"messages":[{"id":"wamid.otp1"}]}'
+
+    class FakeClient:
+        async def post(self, url: str, *, json: dict, headers: dict) -> FakeResponse:
+            captured["url"] = url
+            captured["json"] = json
+            captured["headers"] = headers
+            return FakeResponse()
+
+    settings = _settings(
+        environment="production",
+        otp_provider="whatsapp",
+        meta_wa_token="EAA_test",
+        meta_wa_phone_number_id="1001",
+        meta_wa_otp_template_name="reclaimai_otp",
+        meta_wa_otp_template_lang="en",
+        meta_wa_api_version="v21.0",
+    )
+    provider = WhatsAppOtpProvider(settings, http_client=FakeClient())  # type: ignore[arg-type]
+    await provider.send_otp(
+        OtpDestination(phone_e164="+919900000000"),
+        "654321",
+    )
+    assert captured["url"] == "https://graph.facebook.com/v21.0/1001/messages"
+    body = captured["json"]
+    assert isinstance(body, dict)
+    assert body["type"] == "template"
+    assert body["template"]["name"] == "reclaimai_otp"  # type: ignore[index]
+    assert body["template"]["components"][0]["parameters"][0]["text"] == "654321"  # type: ignore[index]
+
+
+def test_provider_selection_whatsapp() -> None:
+    provider = create_otp_delivery_provider(
+        _settings(
+            otp_provider="whatsapp",
+            meta_wa_token="EAA",
+            meta_wa_phone_number_id="1",
+        )
+    )
+    assert provider.channel == "whatsapp"
 
 
 @pytest.mark.asyncio

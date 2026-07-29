@@ -27,6 +27,8 @@
 		reverse_proxy copy-llm-orchestrator:8004
 	}
 
+	# Meta WhatsApp webhook (public): /api/whatsapp/v1/webhooks/meta-whatsapp
+	# handle_path strips /api/whatsapp → Nest GET/POST /v1/webhooks/meta-whatsapp
 	handle_path /api/whatsapp/* {
 		reverse_proxy whatsapp-dispatch-service:3003
 	}

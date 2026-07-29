@@ -1,5 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { APP_CONFIG, type AppConfig } from '../../config/configuration';
+import {
+  APP_CONFIG,
+  isGupshupConfigured,
+  type AppConfig,
+} from '../../config/configuration';
 import { MetaWhatsAppClient } from './meta-whatsapp.client';
 import { GupshupWhatsAppClient } from './gupshup-whatsapp.client';
 import {
@@ -33,6 +37,10 @@ export class WhatsAppSenderService {
       return await this.meta.send(input);
     } catch (error) {
       if (!isRetryableProviderError(error)) {
+        throw error;
+      }
+      // Portfolio demo: Meta primary only — skip Gupshup unless fully configured.
+      if (!isGupshupConfigured(this.config)) {
         throw error;
       }
       this.logger.warn(

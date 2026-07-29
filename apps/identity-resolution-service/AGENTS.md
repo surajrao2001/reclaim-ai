@@ -60,9 +60,9 @@ Selected by `OTP_PROVIDER`:
 | Value | Behavior |
 |---|---|
 | `smtp` (default local) | Mailhog / SMTP — soft-fails if down in development |
-| `email` / `resend` | Resend HTTP API — required for hosted demo |
+| `email` / `resend` | Resend HTTP API — **default for hosted demo** |
 | `console` | No network; for unit tests |
-| `whatsapp` | Stub only — live Meta WhatsApp OTP is M4 |
+| `whatsapp` | Meta Cloud API from identity (HTTP). Prefer `META_WA_OTP_TEMPLATE_NAME` with body `{{1}}`=OTP; without it, text-only (24h session). Reuses `META_WA_TOKEN` / `META_WA_PHONE_NUMBER_ID`. |
 
 In `ENVIRONMENT=production` (demo), Resend must be configured (`RESEND_API_KEY`, `OTP_FROM_EMAIL`) or OTP request returns `OTP_DELIVERY_FAILED`. Full OTP codes are never logged in production; local/dev may still use Redis `peek_otp` for integration tests.
 
@@ -76,6 +76,9 @@ See root `.env.example`. OTP / cashback-specific:
 | `RESEND_API_KEY` | Resend API key (demo/prod) |
 | `OTP_FROM_EMAIL` | From address / display name for Resend |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM` | Local Mailhog path when `OTP_PROVIDER=smtp` |
+| `META_WA_TOKEN` / `META_WA_PHONE_NUMBER_ID` | Required when `OTP_PROVIDER=whatsapp` |
+| `META_WA_OTP_TEMPLATE_NAME` / `META_WA_OTP_TEMPLATE_LANG` | Preferred cold OTP template (`{{1}}`=code) |
+| `META_WA_API_VERSION` | Default `v21.0` |
 | `RAZORPAYX_KEY_ID` / `RAZORPAYX_KEY_SECRET` | API auth |
 | `RAZORPAYX_ACCOUNT_NUMBER` | Debit account |
 | `RAZORPAYX_WEBHOOK_SECRET` | Webhook HMAC |

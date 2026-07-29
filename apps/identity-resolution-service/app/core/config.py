@@ -39,10 +39,17 @@ class Settings(BaseSettings):
     smtp_port: int = 1025
     smtp_from: str = "otp@reclaimai.local"
 
-    # OTP delivery: smtp (local Mailhog) | email|resend (Resend) | console (tests) | whatsapp (M4)
+    # OTP delivery: smtp (local Mailhog) | email|resend (Resend) | console (tests) | whatsapp (Meta)
     otp_provider: str = "smtp"
     resend_api_key: str = ""
     otp_from_email: str = "ReclaimAI <otp@reclaimai.local>"
+
+    # Meta Cloud API — optional OTP_PROVIDER=whatsapp (identity calls Graph API directly)
+    meta_wa_token: str = ""
+    meta_wa_phone_number_id: str = ""
+    meta_wa_api_version: str = "v21.0"
+    meta_wa_otp_template_name: str = ""
+    meta_wa_otp_template_lang: str = "en"
 
     default_cashback_amount_inr: int = 100
     cors_origins: str = "http://localhost:3101"
