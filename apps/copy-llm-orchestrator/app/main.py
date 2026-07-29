@@ -65,10 +65,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await pool.close()
 
 
+_docs = settings.expose_openapi_docs
 app = FastAPI(
     title="ReclaimAI Copy/LLM Orchestrator",
     version="0.1.0",
-    docs_url="/docs" if settings.environment != "production" else None,
+    docs_url="/docs" if _docs else None,
+    redoc_url="/redoc" if _docs else None,
+    openapi_url="/openapi.json" if _docs else None,
     lifespan=lifespan,
 )
 

@@ -1,7 +1,11 @@
-import { Controller, Headers, HttpCode, Ip, Post, Req } from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, Ip, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { DemoService } from './demo.service';
 import { clientIpFromRequest } from './demo.types';
+
+export class SimulateOrderBodyDto {
+  turnstile_token?: string;
+}
 
 @Controller('v1/demo')
 export class DemoController {
@@ -13,8 +17,9 @@ export class DemoController {
     @Req() req: Request,
     @Ip() nestIp: string,
     @Headers() headers: Record<string, string | string[] | undefined>,
+    @Body() body: SimulateOrderBodyDto = {},
   ) {
     const clientIp = clientIpFromRequest(headers, nestIp || req.ip || 'unknown');
-    return this.demoService.simulateOrder(clientIp);
+    return this.demoService.simulateOrder(clientIp, body?.turnstile_token);
   }
 }

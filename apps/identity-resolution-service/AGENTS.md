@@ -55,7 +55,7 @@ Get-Content scripts/migrate-cashback.sql | docker exec -i reclaimai-postgres psq
 ## Test
 
 ```bash
-pytest tests/test_claim_unit.py tests/test_cashback_unit.py tests/test_otp_delivery_unit.py
+pytest tests/test_claim_unit.py tests/test_cashback_unit.py tests/test_otp_delivery_unit.py tests/test_otp_rate_limit_unit.py tests/test_openapi_docs_unit.py
 
 $env:RUN_INTEGRATION="1"
 pytest tests/test_claim_integration.py
@@ -68,8 +68,19 @@ pytest tests/test_claim_integration.py
 | GET | `/v1/claim/context/{token}` | Resolve order from QR token |
 | POST | `/v1/claim/otp/request` | Send OTP (`phone_e164` + `email`) via configured provider |
 | POST | `/v1/claim/otp/verify` | Verify OTP (phone + otp), merge profile, publish event, return claim JWT |
-| POST | `/v1/claim/cashback` | Bearer claim JWT + UPI VPA → RazorpayX payout |
+| POST | `/v1/claim/cashback` | Bearer claim JWT + UPI VPA → RazorpayX payout (Redis rate limit per claim + IP) |
 | POST | `/v1/webhooks/razorpayx/payout` | Payout status updates (`X-Razorpay-Signature`) |
+
+OpenAPI `/docs` is disabled when `ENVIRONMENT=production` or `DEMO_HARDENED=true`.
+
+### Rate limits (Redis)
+
+| Endpoint | Default | Key |
+|---|---|---|
+| OTP request | 3 / phone / 10 min | `otp:ratelimit:{phone}` |
+| Cashback | 5 / claim / 10 min and 10 / IP / 10 min | `cashback:ratelimit:claim|ip:…` |
+
+429 responses use the standard `{ error: { code, message, trace_id, retryable } }` envelope (`OTP_RATE_LIMITED`, `CASHBACK_RATE_LIMITED`).
 
 ### OTP request body
 

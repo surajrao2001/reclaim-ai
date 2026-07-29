@@ -43,4 +43,12 @@ npm run test:integration --workspace=@reclaimai/pos-integration-service
 Header: `X-Petpooja-HMAC-Signature` (hex HMAC-SHA256 of raw body)
 
 `POST /v1/demo/simulate-order`  
-Public demo entry: builds a Petpooja-shaped payload for showcase `restID` (`pp_out_88219`), signs with `PETPOOJA_WEBHOOK_SECRET`, and invokes the same webhook service. Rate limited (default 5 / IP / 10 min via Redis). Returns `{ order_id, claim_url, qr_code_url, ... }`.
+Public demo entry: builds a Petpooja-shaped payload for showcase `restID` (`pp_out_88219`), signs with `PETPOOJA_WEBHOOK_SECRET`, and invokes the same webhook service. Rate limited (demo default 3 / IP / 10 min via Redis; local default 5). Optional body `{ turnstile_token }` — verified when `TURNSTILE_SECRET_KEY` is set. Returns `{ order_id, claim_url, qr_code_url, ... }`.
+
+No Swagger/OpenAPI UI is mounted on this Nest service.
+
+| Extra env | Purpose |
+|---|---|
+| `DEMO_SIMULATE_RATE_LIMIT_MAX` / `_WINDOW_SECONDS` | Simulate Order Redis limit |
+| `TURNSTILE_SECRET_KEY` | Optional Cloudflare Turnstile siteverify |
+| `CORS_ORIGINS` | Browser origins (demo: `PUBLIC_BASE_URL` only, never `*`) |
