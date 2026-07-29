@@ -15,6 +15,8 @@
 		reverse_proxy pos-integration-service:3002
 	}
 
+	# RazorpayX payout webhook (public): /api/identity/v1/webhooks/razorpayx/payout
+	# handle_path strips /api/identity → FastAPI POST /v1/webhooks/razorpayx/payout
 	handle_path /api/identity/* {
 		reverse_proxy identity-resolution-service:8001
 	}

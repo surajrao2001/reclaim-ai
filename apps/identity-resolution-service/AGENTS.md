@@ -2,6 +2,36 @@
 
 B2C claim flow: QR token → phone + email → OTP (email via Resend / SMTP local) → customer profile merge → Kafka `identity.unmasked` → UPI cashback via RazorpayX.
 
+## Portfolio demo (RazorpayX test mode)
+
+Hosted demo runs with **`RAZORPAYX_MOCK=false`** and RazorpayX **test-mode** credentials (real HTTP + webhooks; **no live money**). Compose forces `RAZORPAYX_MOCK=false`.
+
+### RazorpayX test setup
+
+1. Create a RazorpayX account and use the **Test Mode** API keys (Dashboard → API Keys while Test Mode is on).
+2. Copy **Key Id** → `RAZORPAYX_KEY_ID`, **Key Secret** → `RAZORPAYX_KEY_SECRET`.
+3. Create / note a Test Mode current-account number → `RAZORPAYX_ACCOUNT_NUMBER`.
+4. Register a payout webhook:
+   - **URL:** `{PUBLIC_BASE_URL}/api/identity/v1/webhooks/razorpayx/payout`  
+     Example (local Caddy demo): `http://localhost:8088/api/identity/v1/webhooks/razorpayx/payout`  
+     Example (hosted): `https://your-demo-domain/api/identity/v1/webhooks/razorpayx/payout`
+   - **Secret:** same value as `RAZORPAYX_WEBHOOK_SECRET`
+   - Subscribe to payout status events (`payout.processed`, `payout.failed`, etc.)
+5. Caddy strips `/api/identity` and proxies to this service on `:8001`, so FastAPI routes stay `/v1/webhooks/razorpayx/payout`.
+
+Service refuses to start with `RAZORPAYX_MOCK=false` unless key id, secret, account number, and webhook secret are set. Local/dev may keep mock on (or unset with empty key id) without RazorpayX credentials.
+
+Claim-web labels this path as a **test payout (no real money)** for portfolio honesty.
+
+### Env (demo)
+
+| Var | Demo value |
+|---|---|
+| `RAZORPAYX_MOCK` | `false` (compose forces this) |
+| `RAZORPAYX_KEY_ID` / `RAZORPAYX_KEY_SECRET` | **Required** — RazorpayX **test** keys |
+| `RAZORPAYX_ACCOUNT_NUMBER` | **Required** — test debit account |
+| `RAZORPAYX_WEBHOOK_SECRET` | Must match RazorpayX webhook secret |
+
 ## Run
 
 ```bash
@@ -79,13 +109,13 @@ See root `.env.example`. OTP / cashback-specific:
 | `META_WA_TOKEN` / `META_WA_PHONE_NUMBER_ID` | Required when `OTP_PROVIDER=whatsapp` |
 | `META_WA_OTP_TEMPLATE_NAME` / `META_WA_OTP_TEMPLATE_LANG` | Preferred cold OTP template (`{{1}}`=code) |
 | `META_WA_API_VERSION` | Default `v21.0` |
-| `RAZORPAYX_KEY_ID` / `RAZORPAYX_KEY_SECRET` | API auth |
+| `RAZORPAYX_KEY_ID` / `RAZORPAYX_KEY_SECRET` | API auth (test keys for portfolio) |
 | `RAZORPAYX_ACCOUNT_NUMBER` | Debit account |
 | `RAZORPAYX_WEBHOOK_SECRET` | Webhook HMAC |
-| `RAZORPAYX_MOCK` | Defaults true when key id empty |
+| `RAZORPAYX_MOCK` | Explicit `true`/`false`. If unset, mock when key id empty. Live/test (`false`) **requires** keys + account + webhook secret |
 | `RAZORPAYX_BASE_URL` | Default `https://api.razorpay.com/v1` |
 
-## RazorpayX send shape (real mode)
+## RazorpayX send shape (real / test mode)
 
 1. `POST /contacts` — create contact (`reference_id` = claim id)
 2. `POST /fund_accounts` — VPA fund account

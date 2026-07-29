@@ -11,7 +11,7 @@ from redis.asyncio import Redis
 from app.api.claim import router as claim_router
 from app.api.claim import webhook_router
 from app.api.health import router as health_router
-from app.core.config import settings
+from app.core.config import assert_live_razorpayx_credentials, settings
 from app.core.logging import configure_logging
 from app.services.cashback_service import CashbackService
 from app.services.claim_service import ClaimService
@@ -26,6 +26,8 @@ configure_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    assert_live_razorpayx_credentials(settings)
+
     pool = await asyncpg.create_pool(dsn=settings.asyncpg_dsn, min_size=1, max_size=5)
     redis = Redis.from_url(settings.redis_url, decode_responses=False)
     kafka_raw = AIOKafkaProducer(
